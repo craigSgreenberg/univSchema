@@ -100,6 +100,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
   }
 
   def evaluate(file: String, iter: Int): Double = {
+    var notfound = 0
     val  corpusLineItr = io.Source.fromInputStream(new FileInputStream(file), encoding).getLines
     val ans = scala.collection.mutable.Map[Int, ArrayBuffer[(Double, Boolean)]]()
     //val p = if(opts.writeOutput.value)  new PrintWriter(new File(file + "_" + "output" + "_" + D.toString + "_" + adaGradRate.toString + "_" + opts.regularizer.value.toString + "_" + opts.negative.value.toString + "_" + iter.toString + "_"  + opts.hinge.value.toString + "_" + opts.wsabie.value.toString + "_" + opts.margin.value.toString))
@@ -112,10 +113,13 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
         val Array(ep, rel, label) = line.stripLineEnd.split('\t')
         var truth = true
         if(label == "0")  truth = false
-        val s = getScore(entPairKey(ep), relationKey(rel))
-        if(opts.writeOutput.value)  p.asInstanceOf[PrintWriter].write(rel + "\t0\t" + ep + "\t0\t" + s.toString + "\tmycode\n")
-        //if(truth) k.write(rel + " 0 " + ep + " 1\n")
-        ans(relationKey(rel)) = ans.getOrElseUpdate(relationKey(rel), ArrayBuffer[(Double, Boolean)]()) += ((s,truth))
+        if(entPairKey.contains(ep)) {
+          val s = getScore(entPairKey(ep), relationKey(rel))
+          if(opts.writeOutput.value)  p.asInstanceOf[PrintWriter].write(rel + "\t0\t" + ep + "\t0\t" + s.toString + "\tmycode\n")
+          //if(truth) k.write(rel + " 0 " + ep + " 1\n")
+          ans(relationKey(rel)) = ans.getOrElseUpdate(relationKey(rel), ArrayBuffer[(Double, Boolean)]()) += ((s,truth))
+        }
+        else notfound += 1
       }
     }
     finally {
@@ -127,6 +131,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
       predictionSize += ans(i).size
     }
     println("prediction size : ", predictionSize)
+    println("not found: ", notfound)
     Evaluator.meanAveragePrecision(ans)
   }
 

@@ -40,6 +40,5 @@ object UniversalSchema {
     //wordEmbedding.store()
     //val en1 = System.currentTimeMillis() - st2
     //println("time taken to store embeddings :" + en1 / 1000.0)
-
   }
 }

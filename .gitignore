@@ -1,4 +1,5 @@
-
+run.sh
+master.sh
 *.class
 *~
 CVS

@@ -25,13 +25,15 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
 
   // throw out relations occuring less than min relation count times
   val minRelationCount = 1
+  val negativeSamples = 1
+
   protected val threads = opts.threads.value
   protected val adaGradDelta = 0.0
   protected val adaGradRate = opts.rate.value
   protected val encoding = "UTF-8"
 
   protected val iterations = opts.iterations.value
-  protected val numBatches = 100
+  protected val batchSize = opts.batchSize.value
 
   protected var trainer: Trainer = null
   protected var optimizer: GradientOptimizer = null
@@ -98,6 +100,33 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
         vec /= len
     })
   }
+
+  protected def generateMiniBatch(trainTriplets: Seq[(String, String, String)], batchSize: Int): Seq[Example] = {
+    Seq.fill(batchSize)(trainTriplets(rand.nextInt(trainTriplets.size))).map { case (e1, relation, e2) =>
+      val e1Index = entityVocab.get(e1)
+      val e2Index = entityVocab.get(e2)
+      val relationIndex = relationVocab.get(relation) + entityCount
+      // corrupt either head or tail
+      makeExample(e1Index, relationIndex, e2Index)
+    }
+  }
+
+  def makeExample(e1Index : Int, relationIndex : Int, e2Index : Int): Example
+
+  /**
+   * Randomly sample an entity
+   * @param exclude A set of entities to exclude
+   * @return an entity's id
+   */
+  def negativeSampleEntity(exclude : Option[Set[String]]): Int ={
+    val excludeIndices = exclude.map(entityVocab.get)
+    var negIndex = rand.nextInt(entityCount)
+    if (exclude != None)
+      while (excludeIndices.contains(negIndex)) negIndex = rand.nextInt(entityCount)
+    negIndex
+  }
+
+  def getScore(triple : (String, String, String)) : Double
 }
 
 
@@ -106,9 +135,9 @@ class TransRelationOpts extends CmdOptions {
   val test = new CmdOption[String]("test", "", "FILENAME", "Test File.")
   val l1 = new CmdOption[Boolean]("l1", true, "BOOLEAN", "Use l1 distance, l2 otherwise")
   val iterations = new CmdOption[Int]("iterations", 10, "INT", "Number of iterations to run.")
-  val threads = new CmdOption[Int]("threads", 1, "INT", "Number of iterations to run.")
+  val threads = new CmdOption[Int]("threads", 20, "INT", "Number of iterations to run.")
   val dimension = new CmdOption[Int]("dimension", 100, "INT", "Number of iterations to run.")
-  val batches = new CmdOption[Int]("batches", 100, "INT", "Number of mini batches to use.")
+  val batchSize = new CmdOption[Int]("batch-size", 1200, "INT", "Size of each mini batch")
   val rate = new CmdOption[Double]("rate", 0.01, "INT", "Number of mini batches to use.")
 }
 

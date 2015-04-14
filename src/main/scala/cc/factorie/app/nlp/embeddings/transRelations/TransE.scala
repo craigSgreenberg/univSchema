@@ -18,8 +18,8 @@ class TransE(opts: TransRelationOpts) extends TransRelationModel(opts) {
   // Component-2
   def trainModel(trainTriplets: Seq[(String, String, String)]): Unit = {
     println("Learning Embeddings")
-    optimizer = new ConstantLearningRate(adaGradRate)
-//    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate)
+//    optimizer = new ConstantLearningRate(adaGradRate)
+    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate)
     trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
     //    trainer = new OnlineTrainer(weightsSet = this.parameters, optimizer = optimizer, maxIterations = Int.MaxValue, logEveryN = batchSize-1)
 
@@ -33,7 +33,7 @@ class TransE(opts: TransRelationOpts) extends TransRelationModel(opts) {
     for (iteration <- 0 to iterations) {
       println(s"Training iteration: $iteration")
 
-      normalize(weights.slice(0, entityCount), exactlyOne = true)
+//      normalize(weights, exactlyOne = true)
       val batches = (0 until (trainTriplets.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch(trainTriplets, batchSize)))
       trainer.processExamples(batches)
     }
@@ -108,7 +108,7 @@ class TransE(opts: TransRelationOpts) extends TransRelationModel(opts) {
         negativeId += 1
       }
       val tmp = i.incrementAndGet()
-      if (tmp % 1000 == 0) println(tmp / tot, headRank, tailRank)
+      if (tmp % 1000 == 0) println(tmp / tot)
       Seq(headRank, tailRank)
     }.seq
     // return hits@10 and avg rank

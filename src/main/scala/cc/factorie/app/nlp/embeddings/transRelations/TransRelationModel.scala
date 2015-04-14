@@ -19,7 +19,7 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
 
   val D = opts.dimension.value
   var weights: Seq[Weights] = null
-  val gamma = opts.gamma.value
+  val gamma = 1.0
   // use L1 distance, L2 otherwise
   val l1 = if (opts.l1.value) true else false
 
@@ -27,10 +27,10 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
   val minRelationCount = 1
   val negativeSamples = 1
 
-  val threads = opts.threads.value
-  val adaGradDelta = 0.0
-  val adaGradRate = opts.rate.value
-  val encoding = "UTF-8"
+  protected val threads = opts.threads.value
+  protected val adaGradDelta = 0.0
+  protected val adaGradRate = opts.rate.value
+  protected val encoding = "UTF-8"
 
   protected val iterations = opts.iterations.value
   protected val batchSize = opts.batchSize.value
@@ -95,6 +95,7 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
     embeddings.par.foreach(e => {
       val vec = e.value
       val len = vec.twoNorm
+      //TODO does this update the vector?
       if (exactlyOne || len > 1.0)
         vec /= len
     })
@@ -138,8 +139,7 @@ class TransRelationOpts extends CmdOptions {
   val threads = new CmdOption[Int]("threads", 20, "INT", "Number of iterations to run.")
   val dimension = new CmdOption[Int]("dimension", 100, "INT", "Number of iterations to run.")
   val batchSize = new CmdOption[Int]("batch-size", 1200, "INT", "Size of each mini batch")
-  val rate = new CmdOption[Double]("rate", 0.01, "INT", "Learning rate.")
-  val gamma = new CmdOption[Double]("gamma", 1.0, "DOUBLE", "Number of mini batches to use.")
+  val rate = new CmdOption[Double]("rate", 0.01, "INT", "Number of mini batches to use.")
 }
 
 

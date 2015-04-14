@@ -19,7 +19,7 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
 
   val D = opts.dimension.value
   var weights: Seq[Weights] = null
-  val gamma = 1.0
+  val gamma = opts.gamma.value
   // use L1 distance, L2 otherwise
   val l1 = if (opts.l1.value) true else false
 
@@ -139,7 +139,8 @@ class TransRelationOpts extends CmdOptions {
   val threads = new CmdOption[Int]("threads", 20, "INT", "Number of iterations to run.")
   val dimension = new CmdOption[Int]("dimension", 100, "INT", "Number of iterations to run.")
   val batchSize = new CmdOption[Int]("batch-size", 1200, "INT", "Size of each mini batch")
-  val rate = new CmdOption[Double]("rate", 0.01, "INT", "Number of mini batches to use.")
+  val rate = new CmdOption[Double]("rate", 0.01, "DOUBLE", "Number of mini batches to use.")
+  val gamma = new CmdOption[Double]("gamma", 1.0, "DOUBLE", "Value of gamma.")
 }
 
 

@@ -1,0 +1,1 @@
+mvn clean && ./build.sh && ./run_class.sh cc.factorie.app.nlp.embeddings.transRelations.TestTransE --train=/home/pat/data/FB15K/freebase_mtr100_mte100-train.txt --test=/home/pat/data/FB15K/freebase_mtr100_mte100-test.txt --threads=48 --iterations=1000 --l1=true --dimension=50 --rate=0.01 --gamma=1.0

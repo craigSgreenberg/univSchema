@@ -119,10 +119,11 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
    * @return an entity's id
    */
   def negativeSampleEntity(exclude : Option[Set[String]]): Int ={
-    val excludeIndices = exclude.map(entityVocab.get)
     var negIndex = rand.nextInt(entityCount)
-    if (exclude != None)
+    if (exclude != None) {
+      val excludeIndices = exclude.get.map(entityVocab.get)
       while (excludeIndices.contains(negIndex)) negIndex = rand.nextInt(entityCount)
+    }
     negIndex
   }
 

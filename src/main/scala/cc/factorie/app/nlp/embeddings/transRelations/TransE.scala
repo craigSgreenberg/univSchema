@@ -172,7 +172,6 @@ object TestTransE extends App {
   val transE = new TransE(opts)
   // if data is in format [r1,r2 rel score] use parseArvind
   val train = transE.buildVocab(opts.train.value, transE.parseTsv, calcBernoulli = true)
-  //transE.parseArvind)
   val test = transE.buildVocab(opts.test.value, transE.parseTsv) //transE.parseArvind)
   println(train.size, test.size)
   transE.trainModel(train)

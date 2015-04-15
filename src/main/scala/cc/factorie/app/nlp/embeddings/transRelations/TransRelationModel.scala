@@ -118,7 +118,6 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
     embeddings.par.foreach(e => {
       val vec = e.value
       val len = vec.twoNorm
-      //TODO does this update the vector?
       if (exactlyOne || len > 1.0)
         vec /= len
     })
@@ -152,10 +151,10 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
 
   def negativeSample(e1Dex : Int, e2Dex : Int, relDex : Int, exclude : Option[Set[String]]): (Int, Int) =
   {
-    val sampleHead = if(bernoulliSample && relationBernoulli != null)
-      rand.nextDouble() <= relationBernoulli.getOrElse(relDex, 0.5)
+    val sampleTail = if(bernoulliSample && relationBernoulli != null)
+      rand.nextDouble() >= relationBernoulli.getOrElse(relDex, 0.5)
     else rand.nextInt(2) == 0
-    if (sampleHead) (e1Dex, negativeSampleEntity(None)) else (negativeSampleEntity(None), e2Dex)
+    if (sampleTail) (e1Dex, negativeSampleEntity(None)) else (negativeSampleEntity(None), e2Dex)
   }
 
   def getScore(triple : (String, String, String)) : Double

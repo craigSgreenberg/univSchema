@@ -15,12 +15,15 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
 
   var hyperPlanes: Seq[Weights] = null
   val epsilon = 0.1
+  val epsilonSquared = epsilon*epsilon
+  val C = 0.015625
+  var softConstraints = 0.0
 
   // Component-2
   def trainModel(trainTriplets: Seq[(String, String, String)]): Unit = {
     println("Learning Embeddings")
-    //    optimizer = new ConstantLearningRate(adaGradRate)
-    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate)
+        optimizer = new ConstantLearningRate(adaGradRate)
+//    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate)
     trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
 //    trainer = new OnlineTrainer(weightsSet = this.parameters, optimizer = optimizer, maxIterations = Int.MaxValue, logEveryN = batchSize-1)
 
@@ -35,9 +38,10 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
     for (iteration <- 0 to iterations) {
       println(s"Training iteration: $iteration")
 
-//      normalize(weights, exactlyOne = false)
-//      normalize(hyperPlanes, exactlyOne = true)
-//      orthoganal()
+      normalize(weights, exactlyOne = false)
+      normalize(hyperPlanes, exactlyOne = true)
+      (0 until relationCount).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
+      softConstraints = calculateSoftConstraints()
       val batches = (0 until (trainTriplets.size / batchSize)).map(batch => new MiniBatchExample(generateMiniBatch(trainTriplets, batchSize)))
       trainer.processExamples(batches)
     }
@@ -52,19 +56,28 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
   /*
   Enforce that relation distance vectors and hyperplanes are orthoganal
    */
-  def orthoganal(): Unit = {
-    (0 until relationCount).par.foreach(i => {
-      val dr = weights(i).value
-      val wr = hyperPlanes(i).value
-      wr.twoNormalize()
-      val dot = dr.dot(wr)
-      if (dot > epsilon) {
-        dr -= wr * adaGradRate
-        wr -= dr * adaGradRate
-      }
-    })
-    normalize(hyperPlanes, exactlyOne = true)
+  def orthoganal(embedding : Weights#Value, hPlane : Weights#Value): Unit = {
+    hPlane.twoNormalize()
+    val dot = embedding.dot(hPlane)
+    if (dot > epsilon) {
+      embedding -= hPlane * adaGradRate
+      hPlane -= embedding * adaGradRate
+      hPlane.twoNormalize()
+    }
   }
+
+  def calculateSoftConstraints(): Double =
+  {
+    val entityScore = weights.slice(0, entityCount).map(e => Math.max(0, e.value.twoNormSquared - 1.0)).sum
+    val relationProjectionScore = (0 until relationCount).map(i => {
+      val dr = weights(i + entityCount).value
+      val wr = hyperPlanes(i).value
+      val dot = dr.dot(wr)
+      Math.max(0, (dot*dot / dr.twoNormSquared) / epsilonSquared)
+    }).sum
+    C * (entityScore + relationProjectionScore)
+  }
+
 
   /**
    * Score a relation triplet
@@ -117,7 +130,7 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
       val e1Proj = e1Emb - hyperPlane.*(e1Emb.dot(hyperPlane))
       val e2Proj = e2Emb - hyperPlane.*(e2Emb.dot(hyperPlane))
 
-      val posScore = (e1Proj + relEmb - e2Proj).oneNorm
+      val posScore = if (l1) (e1Proj + relEmb - e2Proj).oneNorm else (e1Proj + relEmb - e2Proj).twoNorm
       // store for efficiency
       val e1Rel = e2Proj + relEmb
       val relE2 = relEmb - e2Proj
@@ -133,12 +146,15 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
           val negProj = negEmb - hyperPlane.*(negEmb.dot(hyperPlane))
 
           if (negativeId != e1Id) {
-            val negHeadScore = (e1Rel - negProj).oneNorm
+            val negHeadScore = if (l1) (e1Rel - negProj).oneNorm else (e1Rel - negProj).twoNorm
+            println(posScore, negHeadScore)
             if (negHeadScore < posScore)
               headRank += 1
           }
           if (negativeId != e2Id) {
-            val negTailScore = (negProj - relE2).oneNorm
+            val negTailScore = if (l1) (negProj - relE2).oneNorm else (negProj - relE2).twoNorm
+            println(posScore, negTailScore)
+
             if (negTailScore < posScore)
               tailRank += 1
           }
@@ -147,6 +163,7 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
       }
       val tmp = i.incrementAndGet()
       if (tmp % 1000 == 0) println(tmp / tot)
+      println(headRank, tailRank)
       Seq(headRank, tailRank)
     }.seq
     // return hits@10 and avg rank
@@ -180,10 +197,9 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
       val posGrad = e2PosEmb - hyperPlane.*(e1PosEmb.dot(hyperPlane)) - relEmb
       val negGrad = e2NegEmb - hyperPlane.*(e1NegEmb.dot(hyperPlane)) - relEmb
 
-      //    val constraints =
       // gamma + pos - neg
-      val objective = if (l1) model.gamma + posGrad.oneNorm - negGrad.oneNorm
-      else model.gamma + posGrad.twoNorm - negGrad.twoNorm
+      val objective = (if (l1) model.gamma + posGrad.oneNorm - negGrad.oneNorm
+      else model.gamma + posGrad.twoNorm - negGrad.twoNorm) + model.softConstraints
 
       if (l1) {
         (0 until posGrad.size).foreach(i => {
@@ -206,7 +222,11 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
         gradient.accumulate(model.hyperPlanes(hPlaneDex), negGrad, -factor)
       }
       negSample += 1
+      model.orthoganal(e2NegEmb, hyperPlane)
+      model.orthoganal(e1NegEmb, hyperPlane)
     }
+    model.orthoganal(e1PosEmb, hyperPlane)
+    model.orthoganal(e2PosEmb, hyperPlane)
   }
 }
 

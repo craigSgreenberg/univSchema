@@ -49,7 +49,7 @@ class WordEmbedRelationsNegSample(override val opts: EmbeddingOpts) extends Univ
     vocab = new Array[String](wordEmbedVocabSize)
     wordEmbeddings = (0 until wordEmbedVocabSize).map(i => {
       val line = lineItr.next.stripLineEnd.split(' ')
-      val word = line(0).toLowerCase
+      val word = line(0)
       vocab(i) = word
       wordVocab.put(word, i)
       val v = new DenseTensor1(wordEmbedD, 0) // allocate the memory
@@ -64,7 +64,7 @@ class WordEmbedRelationsNegSample(override val opts: EmbeddingOpts) extends Univ
   def aggregateWordEmbeddings(relStr : String) : (DenseTensor1, Array[Int]) =
   {
     val relationEmbedding = new DenseTensor1(D, 0)
-    val wordIds = relStr.split("\\s+").map(word => wordVocab.getOrDefault(word, -1)).filterNot(_ == -1)
+    val wordIds = relStr.split("\\s+").map(word => if(wordVocab.containsKey(word)) wordVocab.get(word) else -1).filterNot(_ == -1)
     val wordVectors = wordIds.map(wordEmbeddings(_))
     wordVectors.foreach(v => relationEmbedding.+=(v.value))
     relationEmbedding./=(Math.max(1, wordIds.length))

@@ -114,7 +114,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
         var truth = true
         if(label == "0")  truth = false
         if(entPairKey.contains(ep)) {
-          val s = getScore(entPairKey(ep), relationKey(rel))
+          val s = getScore(ep, rel)
           if(opts.writeOutput.value)  p.asInstanceOf[PrintWriter].write(rel + "\t0\t" + ep + "\t0\t" + s.toString + "\tmycode\n")
           //if(truth) k.write(rel + " 0 " + ep + " 1\n")
           ans(relationKey(rel)) = ans.getOrElseUpdate(relationKey(rel), ArrayBuffer[(Double, Boolean)]()) += ((s,truth))
@@ -133,6 +133,10 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
     println("prediction size : ", predictionSize)
     println("not found: ", notfound)
     Evaluator.meanAveragePrecision(ans)
+  }
+
+  def getScore(ep : String, rel : String): Double ={
+    getScore(entPairKey(ep), relationKey(rel))
   }
 
   // Component-2

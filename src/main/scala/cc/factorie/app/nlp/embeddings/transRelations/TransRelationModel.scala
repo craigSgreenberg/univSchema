@@ -4,6 +4,7 @@ import java.io.FileInputStream
 import java.util
 import java.util.zip.GZIPInputStream
 
+import cc.factorie.app.nlp.embeddings.{UniversalSchemaModel, EmbeddingOpts}
 import cc.factorie.model.{Parameters, Weights}
 import cc.factorie.optimize._
 import cc.factorie.util.CmdOptions
@@ -15,11 +16,9 @@ import scala.util.Random
 /**
  * Created by pat on 4/3/15.
  */
-abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameters {
+abstract class TransRelationModel(override val opts: EmbeddingOpts) extends UniversalSchemaModel(opts) {
 
-  val D = opts.dimension.value
-  var weights: Seq[Weights] = null
-  val gamma = opts.gamma.value
+  val gamma = opts.margin.value
   // use L1 distance, L2 otherwise
   val l1 = if (opts.l1.value) true else false
 
@@ -28,16 +27,12 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
   val negativeSamples = 1
   val bernoulliSample = opts.bernoulliSample.value
 
-  protected val threads = opts.threads.value
-  protected val adaGradDelta = 0.0
-  protected val adaGradRate = opts.rate.value
-  protected val encoding = "UTF-8"
+  var trainTriplets = Seq[(String, String, String)]()
 
-  protected val iterations = opts.iterations.value
+
+  protected val iterations = opts.epochs.value
   protected val batchSize = opts.batchSize.value
 
-  protected var trainer: Trainer = null
-  protected var optimizer: GradientOptimizer = null
 
   protected var relationBernoulli : Map[Int, Double] = null
   protected val relationVocab = new util.HashMap[String, Int]
@@ -45,12 +40,17 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
   var relationCount = 0
   var entityCount = 0
 
-  val rand = new Random(69)
 
 
-  def buildVocab(inFile: String, lineParser: String => (String, String, String), calcBernoulli : Boolean = false)
-  : Seq[(String, String, String)] = {
+  override  def buildVocab(): Unit ={
     println("Building Vocab")
+    val relationMap = readInFile(corpus)
+    relationBernoulli = calculateRelationBernoulli(relationMap.toSeq)
+    // flatten input triplets
+    trainTriplets = relationMap.filter(eList => eList._2.size >= minRelationCount).toSeq.flatMap(eList => eList._2.toSet.toSeq)
+  }
+
+  def readInFile(inFile : String): Map[String, ArrayBuffer[(String, String, String)]] ={
     val corpusLineItr = inFile.endsWith(".gz") match {
       case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(inFile)), encoding).getLines()
       case false => io.Source.fromInputStream(new FileInputStream(inFile), encoding).getLines()
@@ -58,7 +58,7 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
     val relationMap = new mutable.HashMap[String, ArrayBuffer[(String, String, String)]]
     while (corpusLineItr.hasNext) {
       val line = corpusLineItr.next()
-      val (e1, relation, e2) = lineParser(line)
+      val (e1, relation, e2) = if (opts.parseTsv.value) parseTsv(line) else parseArvind(line)
       if (!entityVocab.containsKey(e1)) {
         entityVocab.put(e1, entityCount)
         entityCount += 1
@@ -73,9 +73,7 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
       }
       relationMap.put(relation, relationMap.getOrElse(relation, new ArrayBuffer()) += ((e1, relation, e2)))
     }
-    if(calcBernoulli) relationBernoulli = calculateRelationBernoulli(relationMap.toSeq)
-    // flatten input triplets
-    relationMap.filter(eList => eList._2.size >= minRelationCount).toSeq.flatMap(eList => eList._2.toSet.toSeq)
+    relationMap.toMap
   }
 
   // assumes arvind format : [e1,e2\trelation\tscore]
@@ -158,20 +156,6 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
   }
 
   def getScore(triple : (String, String, String)) : Double
-}
-
-
-class TransRelationOpts extends CmdOptions {
-  val train = new CmdOption[String]("train", "", "FILENAME", "Train file.")
-  val test = new CmdOption[String]("test", "", "FILENAME", "Test File.")
-  val l1 = new CmdOption[Boolean]("l1", true, "BOOLEAN", "Use l1 distance, l2 otherwise")
-  val iterations = new CmdOption[Int]("iterations", 10, "INT", "Number of iterations to run.")
-  val threads = new CmdOption[Int]("threads", 20, "INT", "Number of threads to use.")
-  val dimension = new CmdOption[Int]("dimension", 100, "INT", "Dimension of embeddings to learn.")
-  val batchSize = new CmdOption[Int]("batch-size", 1200, "INT", "Size of each mini batch")
-  val rate = new CmdOption[Double]("rate", 0.01, "DOUBLE", "Learning rate.")
-  val gamma = new CmdOption[Double]("gamma", 1.0, "DOUBLE", "Value of gamma.")
-  val bernoulliSample = new CmdOption[Boolean]("bernoulli", false, "BOOLEAN", "Use bernoulli negative sampling, uniform otherwise.")
 }
 
 

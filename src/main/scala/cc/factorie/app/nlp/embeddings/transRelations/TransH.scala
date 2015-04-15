@@ -11,7 +11,7 @@ import cc.factorie.util.{DoubleSeq, DoubleAccumulator}
 /**
  * Created by pat on 4/3/15.
  */
-class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
+class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
 
   var hyperPlanes: Seq[Weights] = null
   val epsilon = 0.1
@@ -22,8 +22,8 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
   // Component-2
   def trainModel(trainTriplets: Seq[(String, String, String)]): Unit = {
     println("Learning Embeddings")
-        optimizer = new ConstantLearningRate(adaGradRate)
-//    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate)
+//        optimizer = new ConstantLearningRate(adaGradRate)
+    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate)
     trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
 //    trainer = new OnlineTrainer(weightsSet = this.parameters, optimizer = optimizer, maxIterations = Int.MaxValue, logEveryN = batchSize-1)
 
@@ -170,6 +170,10 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
     (ranks.count(_ < 10).toDouble / ranks.size.toDouble, ranks.sum / ranks.length)
   }
 
+  // override this function in your Embedding Model like SkipGramEmbedding or CBOWEmbedding
+  override protected def process(ep: Int, rel: Int): Unit = ???
+
+  override def getScore(ep: Int, rel: Int): Double = ???
 }
 
 class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1: Boolean = false) extends Example {
@@ -232,14 +236,14 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
 
 object TestTransH extends App {
 
-  val opts = new TransRelationOpts()
-  opts.parse(args)
-
-  val transH = new TransH(opts)
-  val train = transH.buildVocab(opts.train.value, transH.parseTsv)
-  val test = transH.buildVocab(opts.test.value, transH.parseTsv)
-  println(train.size, test.size)
-  transH.trainModel(train)
-  println(transH.evaluate(test))
+//  val opts = new EmbeddingOpts()
+//  opts.parse(args)
+//
+//  val transH = new TransH(opts)
+//  val train = transH.buildVocab(opts.corpus.value, transH.parseTsv)
+//  val test = transH.buildVocab(opts.testFile.value, transH.parseTsv)
+//  println(train.size, test.size)
+//  transH.trainModel(train)
+//  println(transH.evaluate(test))
 
 }

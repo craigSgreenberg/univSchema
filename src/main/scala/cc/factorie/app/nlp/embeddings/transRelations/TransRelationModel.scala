@@ -166,10 +166,10 @@ class TransRelationOpts extends CmdOptions {
   val test = new CmdOption[String]("test", "", "FILENAME", "Test File.")
   val l1 = new CmdOption[Boolean]("l1", true, "BOOLEAN", "Use l1 distance, l2 otherwise")
   val iterations = new CmdOption[Int]("iterations", 10, "INT", "Number of iterations to run.")
-  val threads = new CmdOption[Int]("threads", 20, "INT", "Number of iterations to run.")
-  val dimension = new CmdOption[Int]("dimension", 100, "INT", "Number of iterations to run.")
+  val threads = new CmdOption[Int]("threads", 20, "INT", "Number of threads to use.")
+  val dimension = new CmdOption[Int]("dimension", 100, "INT", "Dimension of embeddings to learn.")
   val batchSize = new CmdOption[Int]("batch-size", 1200, "INT", "Size of each mini batch")
-  val rate = new CmdOption[Double]("rate", 0.01, "DOUBLE", "Number of mini batches to use.")
+  val rate = new CmdOption[Double]("rate", 0.01, "DOUBLE", "Learning rate.")
   val gamma = new CmdOption[Double]("gamma", 1.0, "DOUBLE", "Value of gamma.")
   val bernoulliSample = new CmdOption[Boolean]("bernoulli", false, "BOOLEAN", "Use bernoulli negative sampling, uniform otherwise.")
 }

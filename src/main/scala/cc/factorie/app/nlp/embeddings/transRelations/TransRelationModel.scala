@@ -26,7 +26,7 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
   // throw out relations occuring less than min relation count times
   val minRelationCount = 1
   val negativeSamples = 1
-  val bernouliSample = opts.bernouliSample.value
+  val bernoulliSample = opts.bernoulliSample.value
 
   protected val threads = opts.threads.value
   protected val adaGradDelta = 0.0
@@ -39,7 +39,7 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
   protected var trainer: Trainer = null
   protected var optimizer: GradientOptimizer = null
 
-  protected var relationBernouli : Map[Int, Double] = null
+  protected var relationBernoulli : Map[Int, Double] = null
   protected val relationVocab = new util.HashMap[String, Int]
   protected val entityVocab = new util.HashMap[String, Int]
   var relationCount = 0
@@ -48,7 +48,7 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
   val rand = new Random(69)
 
 
-  def buildVocab(inFile: String, lineParser: String => (String, String, String), calcBernouli : Boolean = false)
+  def buildVocab(inFile: String, lineParser: String => (String, String, String), calcBernoulli : Boolean = false)
   : Seq[(String, String, String)] = {
     println("Building Vocab")
     val corpusLineItr = inFile.endsWith(".gz") match {
@@ -73,7 +73,7 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
       }
       relationMap.put(relation, relationMap.getOrElse(relation, new ArrayBuffer()) += ((e1, relation, e2)))
     }
-    if(calcBernouli) relationBernouli = calculateRelationBernouli(relationMap.toSeq)
+    if(calcBernoulli) relationBernoulli = calculateRelationBernoulli(relationMap.toSeq)
     // flatten input triplets
     relationMap.filter(eList => eList._2.size >= minRelationCount).toSeq.flatMap(eList => eList._2.toSet.toSeq)
   }
@@ -95,7 +95,7 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
    * @param relationTripleMap map from relation to triples containing that relation
    * @return map from relation index to P(corrupt head)
    */
-  def calculateRelationBernouli(relationTripleMap : Seq[(String, ArrayBuffer[(String, String, String)])]): Map[Int, Double] ={
+  def calculateRelationBernoulli(relationTripleMap : Seq[(String, ArrayBuffer[(String, String, String)])]): Map[Int, Double] ={
     relationTripleMap.map { case (rel, triples) =>
       // group by head entity
       val headGroups = triples.groupBy(_._1)
@@ -152,7 +152,9 @@ abstract class TransRelationModel(val opts: TransRelationOpts) extends Parameter
 
   def negativeSample(e1Dex : Int, e2Dex : Int, relDex : Int, exclude : Option[Set[String]]): (Int, Int) =
   {
-    val sampleHead = if(bernouliSample) rand.nextDouble() <= relationBernouli.getOrElse(relDex, 0.5) else rand.nextInt(2) == 0
+    val sampleHead = if(bernoulliSample && relationBernoulli != null)
+      rand.nextDouble() <= relationBernoulli.getOrElse(relDex, 0.5)
+    else rand.nextInt(2) == 0
     if (sampleHead) (e1Dex, negativeSampleEntity(None)) else (negativeSampleEntity(None), e2Dex)
   }
 
@@ -170,7 +172,7 @@ class TransRelationOpts extends CmdOptions {
   val batchSize = new CmdOption[Int]("batch-size", 1200, "INT", "Size of each mini batch")
   val rate = new CmdOption[Double]("rate", 0.01, "DOUBLE", "Number of mini batches to use.")
   val gamma = new CmdOption[Double]("gamma", 1.0, "DOUBLE", "Value of gamma.")
-  val bernouliSample = new CmdOption[Boolean]("bernouli", false, "BOOLEAN", "Use bernouli negative sampling, uniform otherwise.")
+  val bernoulliSample = new CmdOption[Boolean]("bernoulli", false, "BOOLEAN", "Use bernoulli negative sampling, uniform otherwise.")
 }
 
 

@@ -29,7 +29,7 @@ class WordEmbedRelationsNegSample(override val opts: EmbeddingOpts) extends Univ
   }
 
   override def getScore(ep: Int, rel: Int): Double = {
-    val nodeEmbedding = relationEmbeddings(rel)
+    val nodeEmbedding = aggregateWordEmbeddings(reverseRelationKey(rel))._1
     val epEmbedding = weights(ep).value
     val ans: Double = nodeEmbedding.dot(epEmbedding)
     ans

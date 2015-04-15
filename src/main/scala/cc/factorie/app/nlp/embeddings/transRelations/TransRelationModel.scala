@@ -24,7 +24,7 @@ abstract class TransRelationModel(override val opts: EmbeddingOpts) extends Univ
 
   // throw out relations occuring less than min relation count times
   val minRelationCount = 1
-  val negativeSamples = 1
+  val negativeSamples = opts.negative.value
   val bernoulliSample = opts.bernoulliSample.value
 
   var trainTriplets = Seq[(String, String, String)]()

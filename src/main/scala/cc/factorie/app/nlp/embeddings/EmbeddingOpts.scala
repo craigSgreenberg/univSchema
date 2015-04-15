@@ -41,7 +41,7 @@ class EmbeddingOpts extends CmdOptions {
   // IO Related (MUST GIVE Options)
   val encoding = new CmdOption("encoding", "UTF8", "STRING", "use <string> for encoding option. ISO-8859-15 is default")
   val saveVocabFile = new CmdOption("save-vocab", null, "STRING", "save vocab file")
-  val loadVocabFile = new CmdOption("load-vocab", null, "STRING", "load the vocab file") // atleast one of them  should be given. save-vocab or load-vocab
+  val loadVocabFile = new CmdOption("load-vocab", "", "STRING", "load the vocab file") // atleast one of them  should be given. save-vocab or load-vocab
   val corpus = new CmdOption("train", "", "STRING", "train file")
   val devFile = new CmdOption("dev", "", "STRING", "dev file")
   val testFile = new CmdOption("test", "", "STRING", "test file")

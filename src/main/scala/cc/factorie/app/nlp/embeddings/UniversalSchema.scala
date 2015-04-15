@@ -27,6 +27,7 @@ object UniversalSchema {
       case 2 => new NegativeSampling(opts)
       case 3 => new NeighborhoodClassifier(opts)
       case 4 => new TransE(opts)
+      case 5 => new WordEmbedRelationsNegSample(opts)
     }
     println(model.D, model.adaGradRate, model.opts.regularizer.value, model.opts.epochs.value, model.opts.negative.value, model.opts.threads.value)
     println(opts.writeOutput.value)

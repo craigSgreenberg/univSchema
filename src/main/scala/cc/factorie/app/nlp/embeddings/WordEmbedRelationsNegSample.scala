@@ -15,10 +15,8 @@ import scala.io.Source
 class WordEmbedRelationsNegSample(override val opts: EmbeddingOpts) extends UniversalSchemaModel(opts) {
   var threshold = 0
   var vocab = Array[String]()
-  var relationEmbeddings = Array[DenseTensor1]()
   var wordEmbeddings : Seq[Weights] = null
   val wordVocab = new util.HashMap[String, Int]
-  var zeroTensor : DenseTensor1 = null
   var wordEmbedVocabSize = 0
   var wordEmbedD = 0
 
@@ -39,7 +37,10 @@ class WordEmbedRelationsNegSample(override val opts: EmbeddingOpts) extends Univ
     -1
   }
 
-  def loadWordEmbeddings(embeddingsFile: String, encoding: String = "UTF8"): Unit = {
+  def loadWordEmbeddings(embeddingsFile: String, encoding: String = "UTF8"): Unit =
+  {
+    val st1 = System.currentTimeMillis()
+
     val lineItr = Source.fromFile(embeddingsFile, encoding).getLines()
     // first line is (# words, dimension)
     val details = lineItr.next.stripLineEnd.split(' ').map(_.toInt)
@@ -57,17 +58,17 @@ class WordEmbedRelationsNegSample(override val opts: EmbeddingOpts) extends Univ
       v.twoNormalize()
       Weights(v)
     })
-    zeroTensor = new DenseTensor1(wordEmbedD, 0)
-    println("loaded vocab and their embeddings")
+    val st = System.currentTimeMillis()
+    println(s"time taken to load $wordEmbedVocabSize embeddings : ${(st - st1) / 1000.0}")
   }
 
   def aggregateWordEmbeddings(relStr : String) : (DenseTensor1, Array[Int]) =
   {
-    val relationEmbedding = new DenseTensor1(D, 0)
+    val relationEmbedding = new DenseTensor1(wordEmbedD, 0)
     val wordIds = relStr.split("\\s+").map(word => if(wordVocab.containsKey(word)) wordVocab.get(word) else -1).filterNot(_ == -1)
-    val wordVectors = wordIds.map(wordEmbeddings(_))
-    wordVectors.foreach(v => relationEmbedding.+=(v.value))
-    relationEmbedding./=(Math.max(1, wordIds.length))
+    val wordVectors = wordIds.map(wordEmbeddings(_).value)
+    wordVectors.foreach(v => relationEmbedding.+=(v))
+    relationEmbedding./=(Math.max(1.0, wordIds.length))
     (relationEmbedding, wordIds)
   }
 

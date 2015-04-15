@@ -48,7 +48,7 @@ class WordEmbedRelationsNegSample(override val opts: EmbeddingOpts) extends Univ
       vocab(i) = word
       wordVocab.put(word, i)
       Weights(TensorUtils.setToRandom1(new DenseTensor1(wordEmbedD, 0), rand))
-    }
+    }.toSeq
   }
 
   /**

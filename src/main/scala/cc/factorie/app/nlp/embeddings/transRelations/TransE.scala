@@ -128,9 +128,7 @@ class TransEExample(model: TransRelationModel, e1PosDex: Int, relDex: Int, e2Pos
     var negSample = 0
     while (negSample < model.negativeSamples) {
       // draw negative sample randomly either from head or tail
-      val (e1NegDex, e2NegDex) =
-        if (model.rand.nextInt(2) == 0) (e1PosDex, model.negativeSampleEntity(None))
-        else (model.negativeSampleEntity(None), e2PosDex)
+      val (e1NegDex, e2NegDex) = model.negativeSample(e1PosDex, e2PosDex, relDex, None)
 
       val e1NegEmb = model.weights(e1NegDex).value
       val e2NegEmb = model.weights(e2NegDex).value
@@ -173,7 +171,7 @@ object TestTransE extends App {
 
   val transE = new TransE(opts)
   // if data is in format [r1,r2 rel score] use parseArvind
-  val train = transE.buildVocab(opts.train.value, transE.parseTsv)
+  val train = transE.buildVocab(opts.train.value, transE.parseTsv, calcBernouli = true)
   //transE.parseArvind)
   val test = transE.buildVocab(opts.test.value, transE.parseTsv) //transE.parseArvind)
   println(train.size, test.size)

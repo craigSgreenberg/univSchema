@@ -68,6 +68,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
   }
 
   def buildVocab(): Unit ={
+    println("Loading vocab.")
     val corpusLineItr = corpus.endsWith(".gz") match {
       case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(corpus)), encoding).getLines
       case false => io.Source.fromInputStream(new FileInputStream(corpus), encoding).getLines

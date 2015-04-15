@@ -28,7 +28,7 @@ class WordEmbedRelationsNegSample(override val opts: EmbeddingOpts) extends Univ
   override def buildVocab(): Unit ={
     super.buildVocab()
     val st1 = System.currentTimeMillis()
-    if (opts.loadVocabFile.hasValue) loadWordEmbeddings(opts.loadVocabFile.value)
+    if (opts.loadVocabFile.value != "") loadWordEmbeddings(opts.loadVocabFile.value)
     else randomlyInitializeWordEmbeddings()
     println(s"time taken to load $wordEmbedVocabSize embeddings : ${(System.currentTimeMillis() - st1) / 1000.0}")
     println("# words : %d , # size : %d".format(wordEmbedVocabSize, wordEmbedD))

@@ -20,33 +20,49 @@ class WordEmbedRelationsNegSample(override val opts: EmbeddingOpts) extends Univ
   var wordEmbedVocabSize = 0
   var wordEmbedD = 0
 
-  if (opts.loadVocabFile.hasValue) loadWordEmbeddings(opts.loadVocabFile.value)
-
   override def process(ep: Int, rel: Int): Unit = {
     trainer.processExample(new WordEmbedRelationNegSampleExample(this, ep, rel))
   }
 
-  override def getScore(ep: Int, rel: Int): Double = {
-    val nodeEmbedding = aggregateWordEmbeddings(reverseRelationKey(rel))._1
-    val epEmbedding = weights(ep).value
-    val ans: Double = nodeEmbedding.dot(epEmbedding)
-    ans
+
+  override def buildVocab(): Unit ={
+    super.buildVocab()
+    val st1 = System.currentTimeMillis()
+    if (opts.loadVocabFile.hasValue) loadWordEmbeddings(opts.loadVocabFile.value)
+    else randomlyInitializeWordEmbeddings()
+    println(s"time taken to load $wordEmbedVocabSize embeddings : ${(System.currentTimeMillis() - st1) / 1000.0}")
+    println("# words : %d , # size : %d".format(wordEmbedVocabSize, wordEmbedD))
   }
 
-  def subSample(word: Int): Int = {
-    -1
+  /**
+   * Randomly initialize a word embedding for each unique whitespace
+   * seperated token appearing across relations
+   */
+  def randomlyInitializeWordEmbeddings(): Unit =
+  {
+    val relWords = relationKey.keysIterator.flatMap(_.split("\\s+")).toSet
+    wordEmbedD = D
+    wordEmbedVocabSize = relWords.size
+    vocab = new Array[String](wordEmbedVocabSize)
+    wordEmbeddings = relWords.zipWithIndex.map{case(word, i) =>
+      vocab(i) = word
+      wordVocab.put(word, i)
+      Weights(TensorUtils.setToRandom1(new DenseTensor1(wordEmbedD, 0), rand))
+    }
   }
 
+  /**
+   * load word embeddings word2vec formated txt file
+   * @param embeddingsFile path to word2vec.txt file
+   * @param encoding encoding
+   */
   def loadWordEmbeddings(embeddingsFile: String, encoding: String = "UTF8"): Unit =
   {
-    val st1 = System.currentTimeMillis()
-
     val lineItr = Source.fromFile(embeddingsFile, encoding).getLines()
     // first line is (# words, dimension)
     val details = lineItr.next.stripLineEnd.split(' ').map(_.toInt)
     wordEmbedVocabSize = if (threshold > 0 && details(0) > threshold) threshold else details(0)
     wordEmbedD = details(1)
-    println("# words : %d , # size : %d".format(wordEmbedVocabSize, wordEmbedD))
     vocab = new Array[String](wordEmbedVocabSize)
     wordEmbeddings = (0 until wordEmbedVocabSize).map(i => {
       val line = lineItr.next.stripLineEnd.split(' ')
@@ -58,9 +74,16 @@ class WordEmbedRelationsNegSample(override val opts: EmbeddingOpts) extends Univ
       v.twoNormalize()
       Weights(v)
     })
-    val st = System.currentTimeMillis()
-    println(s"time taken to load $wordEmbedVocabSize embeddings : ${(st - st1) / 1000.0}")
   }
+
+
+  override def getScore(ep: Int, rel: Int): Double = {
+    val nodeEmbedding = aggregateWordEmbeddings(reverseRelationKey(rel))._1
+    val epEmbedding = weights(ep).value
+    val ans: Double = nodeEmbedding.dot(epEmbedding)
+    ans
+  }
+
 
   def aggregateWordEmbeddings(relStr : String) : (DenseTensor1, Array[Int]) =
   {

@@ -121,7 +121,7 @@ class WordEmbedRelationNegSampleExample(model: WordEmbedRelationsNegSample, ep: 
         gradient.accumulate(model.weights(ep), relEmbedding, factor)
         gradient.accumulate(model.weights(negEp), relEmbedding, -factor)
         relWordIds.foreach(v => {
-          gradient.accumulate(model.wordEmbeddings(rel), epEmbedding - negEpEmbedding, factor)
+          gradient.accumulate(model.wordEmbeddings(v), epEmbedding - negEpEmbedding, factor)
         })
       }
 

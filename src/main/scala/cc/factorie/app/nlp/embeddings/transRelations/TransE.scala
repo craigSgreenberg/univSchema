@@ -30,7 +30,8 @@ class TransE(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       println(s"Training iteration: $iteration")
       val st1 = System.currentTimeMillis()
 //      normalize(weights, exactlyOne = true)
-      val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch(trainingExamples, batchSize)))
+//      val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch(trainingExamples, batchSize)))
+      val batches = trainingExamples.map(e => makeExample(e._2, e._4, e._3))
       val st = System.currentTimeMillis()
       println("comuting gradients " + (st - st1) / 1000.0)
       trainer.processExamples(batches)
@@ -135,7 +136,9 @@ class TransEExample(model: TransRelationModel, e1PosDex: Int, relDex: Int, e2Pos
 
   val factor: Double = 1.0
 
-  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit =
+  {
+//    println("examplin")
     val e1PosEmb = model.weights(e1PosDex).value
     val e2PosEmb = model.weights(e2PosDex).value
     val relEmb = model.weights(relDex).value

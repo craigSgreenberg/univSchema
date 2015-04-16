@@ -170,7 +170,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
     }
     println("prediction size : ", predictionSize)
     println("not found: ", notfound)
-    println("hits@10 and avgRank : " + Evaluator.avgRankHitsAt10(this, testSet))
+//    println("hits@10 and avgRank : " + Evaluator.avgRankHitsAt10(this, testSet))
 
     Evaluator.meanAveragePrecision(ans)
   }

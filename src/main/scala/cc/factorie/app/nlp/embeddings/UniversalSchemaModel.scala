@@ -20,13 +20,15 @@ import java.util.zip.{ GZIPOutputStream, GZIPInputStream }
 import scala.collection.mutable
 import scala.util.control.Breaks._
 import scala.util.Random
+import java.util.HashMap
 import scala.collection.mutable.ArrayBuffer
+import java.util.HashSet
 
 abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters {
   //val entityPairFeatures = new mutable.HashMap[Int, ArrayBuffer[Int]]()
   val entityPairFeatures = new mutable.HashMap[Int, SparseBinaryTensor1]()
   var classifierWeights: Seq[Weights] = null
-  val testRels: mutable.HashSet[String] = new mutable.HashSet[String]()
+  val testRels: HashSet[String] = new HashSet[String]()
   var processed = 0
   // Algo related
   val rand = new Random(0)
@@ -35,10 +37,9 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
   var relationSize: Int = -1 // no. of relations
   var trainingExamplesSize : Int = -1 //no. of training examples
   var tree = new mutable.HashMap[Int, treePosition]()
-  val positives = new mutable.HashMap[Int, mutable.HashSet[Int]]()
-  protected val entPairKey = new mutable.HashMap[String, Int]()
-  protected val relationKey = new mutable.HashMap[String, Int]()
-  protected val reverseRelationKey = new mutable.HashMap[Int, String]()
+  protected val entPairKey = new HashMap[String, Int]()
+  protected val relationKey = new HashMap[String, Int]()
+  protected val reverseRelationKey = new HashMap[Int, String]()
   protected var trainingExamples = List[(Int, Int)]()
   protected val threads = opts.threads.value //  default value is 12
   protected val adaGradDelta = opts.delta.value // default value is 0.1
@@ -63,7 +64,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
     val treeFile =   io.Source.fromInputStream(new FileInputStream(opts.treeFile.value), encoding).getLines
     while (treeFile.hasNext) {
      val Array(rel, nl, code) =  (treeFile.next).split("\t")
-      tree.getOrElseUpdate(relationKey(rel), new treePosition(rel, nl.split(" ").toSeq.map(c => c.toInt).toArray, code.split(" ").toSeq.map(c => c.toInt).toArray))
+      tree.getOrElseUpdate(relationKey.get(rel), new treePosition(rel, nl.split(" ").toSeq.map(c => c.toInt).toArray, code.split(" ").toSeq.map(c => c.toInt).toArray))
     }
   }
 
@@ -75,10 +76,10 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
     while (corpusLineItr.hasNext) {
       val line = corpusLineItr.next
       val Array(ep, rel, label) = line.stripLineEnd.split('\t')
-      trainingExamples = (entPairKey.getOrElseUpdate(ep, entPairKey.size), relationKey.getOrElseUpdate(rel, relationKey.size)) :: trainingExamples
-      positives(relationKey(rel)) = positives.getOrElseUpdate(relationKey(rel), mutable.HashSet[Int]())
-      positives(relationKey(rel)).add(entPairKey(ep))
-      reverseRelationKey(relationKey(rel)) = rel
+      if(!(entPairKey.containsKey(ep)))  entPairKey.put(ep, entPairKey.size())
+      if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
+      trainingExamples = (entPairKey.get(ep), relationKey.get(rel)) :: trainingExamples
+      reverseRelationKey.put(relationKey.get(rel), rel)
     }
 
     entPairSize = entPairKey.size
@@ -94,7 +95,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
     }
     */
     println("Number of entity pairs: ", entPairSize)
-    println("Number of relations: ", relationSize, positives.size, reverseRelationKey.size)
+    println("Number of relations: ", relationSize, reverseRelationKey.size)
     println("Number of training examples: ", trainingExamplesSize)
     if(opts.options.value == 1)  buildBinaryTree()
   }
@@ -103,7 +104,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
     var notfound = 0
     val  corpusLineItr = io.Source.fromInputStream(new FileInputStream(file), encoding).getLines
     val ans = scala.collection.mutable.Map[Int, ArrayBuffer[(Double, Boolean)]]()
-    //val p = if(opts.writeOutput.value)  new PrintWriter(new File(file + "_" + "output" + "_" + D.toString + "_" + adaGradRate.toString + "_" + opts.regularizer.value.toString + "_" + opts.negative.value.toString + "_" + iter.toString + "_"  + opts.hinge.value.toString + "_" + opts.wsabie.value.toString + "_" + opts.margin.value.toString))
+    //val p = if(opts.writeOutput                                                                                                                                        .value)  new PrintWriter(new File(file + "_" + "output" + "_" + D.toString + "_" + adaGradRate.toString + "_" + opts.regularizer.value.toString + "_" + opts.negative.value.toString + "_" + iter.toString + "_"  + opts.hinge.value.toString + "_" + opts.wsabie.value.toString + "_" + opts.margin.value.toString))
     val fileName = file + "_" + "output" +  "_" + D.toString + "_" + adaGradRate.toString + "_" + opts.regularizer.value.toString + "_" + opts.negative.value.toString + "_" + iter.toString + "_"  + opts.hinge.value.toString + "_" + opts.wsabie.value.toString + "_" + opts.margin.value.toString + "_" + opts.treeFile.value.toString.split("/").reverse(0)
     println(fileName)
     val p = if(opts.writeOutput.value)  new PrintWriter(new File(fileName))
@@ -113,11 +114,12 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
         val Array(ep, rel, label) = line.stripLineEnd.split('\t')
         var truth = true
         if(label == "0")  truth = false
-        if(entPairKey.contains(ep)) {
+        if(entPairKey.containsKey(ep)) {
           val s = getScore(ep, rel)
           if(opts.writeOutput.value)  p.asInstanceOf[PrintWriter].write(rel + "\t0\t" + ep + "\t0\t" + s.toString + "\tmycode\n")
           //if(truth) k.write(rel + " 0 " + ep + " 1\n")
-          ans(relationKey(rel)) = ans.getOrElseUpdate(relationKey(rel), ArrayBuffer[(Double, Boolean)]()) += ((s,truth))
+
+          ans(relationKey.get(rel)) = ans.getOrElseUpdate(relationKey.get(rel), ArrayBuffer[(Double, Boolean)]()) += ((s,truth))
         }
         else notfound += 1
       }
@@ -136,7 +138,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
   }
 
   def getScore(ep : String, rel : String): Double ={
-    getScore(entPairKey(ep), relationKey(rel))
+    getScore(entPairKey.get(ep), relationKey.get(rel))
   }
 
   // Component-2
@@ -160,11 +162,16 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
     for(i <- 1 until (opts.epochs.value + 1)){ // number of iterations
           println("Training Iteration " , i , processed)
           processed = 0
+          val st1 = System.currentTimeMillis()
           val it = rand.shuffle(trainingExamples).grouped(groupSize);
           //println("match ", threads, groupSize)
           var threadExamples = new ArrayBuffer[List[(Int, Int)]]()
-          for(n <- 0 until threads)  threadExamples = threadExamples += rand.shuffle(it.next())
+          for(n <- 0 until threads)  threadExamples = threadExamples += it.next()
+          val st = System.currentTimeMillis()
+          println("comuting gradients " + (st - st1) / 1000.0)
           Threading.parForeach(threadIds, threads)(threadId => workerThread(threadExamples(threadId)))
+          val st2 = System.currentTimeMillis()
+          println("finished comuting gradients " + (st2 - st) / 1000.0)
           if(i % opts.evalautionFrequency.value == 0) {
             println("Dev MAP after " + i + " iterations: " + evaluate(opts.devFile.value, i))
             println("Test MAP after " + i + " iterations: " + evaluate(opts.testFile.value, i))
@@ -174,7 +181,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
     val out = if(opts.writeVecs.value)  new PrintWriter(new File("relationVecs"))
     try{
         if(opts.writeVecs.value){
-          for(i <- 0 until relationSize)  out.asInstanceOf[PrintWriter].write(reverseRelationKey(i) + "\t" + nodeWeights(i).value.toString + "\n")
+          for(i <- 0 until relationSize)  out.asInstanceOf[PrintWriter].write(reverseRelationKey.get(i) + "\t" + nodeWeights(i).value.toString + "\n")
         }
     }
     finally {

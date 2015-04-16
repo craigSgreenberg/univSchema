@@ -18,7 +18,8 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     while (testcorpusLineItr.hasNext) {
       val line = testcorpusLineItr.next
       val Array(ep, rel, label) = line.stripLineEnd.split('\t')
-      val relKey = relationKey.getOrElseUpdate(rel, relationKey.size)
+      if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
+      val relKey = relationKey.get(rel)
       testRels.add(rel)
     }
     println("Number of test relations ", testRels.size)
@@ -29,20 +30,21 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     while (corpusLineItr.hasNext) {
       val line = corpusLineItr.next
       val Array(ep, rel, label) = line.stripLineEnd.split('\t')
-      val epKey = entPairKey.getOrElseUpdate(ep, entPairKey.size)
-      val relKey = relationKey.getOrElseUpdate(rel, relationKey.size)
+      if(!(entPairKey.containsKey(ep)))  entPairKey.put(ep, entPairKey.size())
+      if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
+      val epKey = entPairKey.get(ep)
+      val relKey = relationKey.get(rel)
       if(testRels.contains(rel)) trainingExamples = (epKey, relKey) :: trainingExamples
       entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseBinaryTensor1(200000))
       entityPairFeatures(epKey).update(relKey, 1.0)
-      positives(relKey) = positives.getOrElseUpdate(relKey, mutable.HashSet[Int]())
-      positives(relKey).add(epKey)
+
     }
 
     entPairSize = entPairKey.size
     relationSize = relationKey.size
     trainingExamplesSize = trainingExamples.size
     println("Number of entity pairs: ", entPairSize)
-    println("Number of relations: ", relationSize, positives.size)
+    println("Number of relations: ", relationSize)
     println("Number of training examples: ", trainingExamplesSize)
   }
 
@@ -105,20 +107,10 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
 }
 
 class NeighborhoodClassifierExample(model: UniversalSchemaModel, ep: Int, rel:Int) extends Example {
-  val attempts = 20
+
   def getNegEp(): Int = {
-    var trial = 0
-    var found = false
-    var ret = -1
-    while(trial < attempts && (!found)){
-      val neg = model.rand.nextInt(model.entPairSize)
-      if(!(model.positives(rel).contains(neg))){
-        found = true
-        ret = neg
-      }
-      trial += 1
-    }
-    ret
+    model.rand.nextInt(model.entPairSize)
+
   }
 
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {

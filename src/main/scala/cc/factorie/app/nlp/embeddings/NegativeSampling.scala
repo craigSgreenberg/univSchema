@@ -1,6 +1,5 @@
 package cc.factorie.app.nlp.embeddings
 
-import scala.collection.mutable
 import cc.factorie.optimize.Example
 import cc.factorie.util.DoubleAccumulator
 import cc.factorie.la.{DenseTensor1, WeightsMapAccumulator}
@@ -55,20 +54,9 @@ class NegativeSampling (override val opts: EmbeddingOpts) extends UniversalSchem
 
 
 class NegativeSamplingExample(model: UniversalSchemaModel, ep: Int, rel: Int) extends Example {
-  val attempts = 20
+
   def getNegEp(): Int = {
-    var trial = 0
-    var found = false
-    var ret = -1
-    while(trial < attempts && (!found)){
-      val neg = model.rand.nextInt(model.entPairSize)
-      if(!(model.positives(rel).contains(neg))){
-        found = true
-        ret = neg
-      }
-      trial += 1
-    }
-    ret
+    model.rand.nextInt(model.entPairSize)
   }
 
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {

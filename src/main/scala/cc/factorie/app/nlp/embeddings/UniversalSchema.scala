@@ -28,7 +28,8 @@ object UniversalSchema {
       case 3 => new NeighborhoodClassifier(opts)
       case 4 => new TransE(opts)
     }
-    println(model.D, model.adaGradRate, model.opts.regularizer.value, model.opts.epochs.value, model.opts.negative.value, model.opts.threads.value)
+    println(opts.options.value)
+    println(model.D, model.adaGradRate, model.opts.regularizer.value, model.opts.epochs.value, model.opts.negative.value, model.opts.threads.value, model.opts.batchSize.value, model.opts.margin.value)
     println(opts.writeOutput.value)
     println(opts.treeFile.value)
     val st1 = System.currentTimeMillis()

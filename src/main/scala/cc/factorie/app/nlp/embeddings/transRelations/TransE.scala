@@ -32,11 +32,14 @@ class TransE(opts: EmbeddingOpts) extends TransRelationModel(opts) {
 
     for (iteration <- 1 to iterations) {
       println(s"Training iteration: $iteration")
-
+      val st1 = System.currentTimeMillis()
 //      normalize(weights, exactlyOne = true)
       val batches = (0 until (trainTriplets.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch(trainTriplets, batchSize)))
+      val st = System.currentTimeMillis()
+      println("comuting gradients " + (st - st1) / 1000.0)
       trainer.processExamples(batches)
-
+      val st2 = System.currentTimeMillis()
+      println("finished comuting gradients " + (st2 - st) / 1000.0)
       if(iteration % opts.evalautionFrequency.value == 0) {
         println("Dev MAP after " + iteration + " iterations: " + evaluate(opts.devFile.value, iteration))
         println("Test MAP after " + iteration + " iterations: " + evaluate(opts.testFile.value, iteration))

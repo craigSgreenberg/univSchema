@@ -1,10 +1,10 @@
 package cc.factorie.app.nlp.embeddings.transRelations
 
-import java.io.FileInputStream
+import java.io.{File, PrintWriter, FileInputStream}
 import java.util
 import java.util.zip.GZIPInputStream
 
-import cc.factorie.app.nlp.embeddings.{UniversalSchemaModel, EmbeddingOpts}
+import cc.factorie.app.nlp.embeddings.{Evaluator, UniversalSchemaModel, EmbeddingOpts}
 import cc.factorie.model.{Parameters, Weights}
 import cc.factorie.optimize._
 import cc.factorie.util.CmdOptions
@@ -48,6 +48,37 @@ abstract class TransRelationModel(override val opts: EmbeddingOpts) extends Univ
     relationBernoulli = calculateRelationBernoulli(relationMap.toSeq)
     // flatten input triplets
     trainTriplets = relationMap.filter(eList => eList._2.size >= minRelationCount).toSeq.flatMap(eList => eList._2.toSet.toSeq)
+  }
+
+  override def evaluate(file: String, iter: Int): Double = {
+
+    val  corpusLineItr = io.Source.fromInputStream(new FileInputStream(file), encoding).getLines
+    val ans = scala.collection.mutable.Map[Int, ArrayBuffer[(Double, Boolean)]]()
+
+    val fileName = file + "_" + "output" +  "_" + D.toString + "_" + adaGradRate.toString + "_" + opts.regularizer.value.toString + "_" + opts.negative.value.toString + "_" + iter.toString + "_"  + opts.hinge.value.toString + "_" + opts.margin.value.toString + "_" + opts.options.value.toString
+    println(fileName)
+    val p = if(opts.writeOutput.value)  new PrintWriter(new File(fileName))
+    try{
+      while (corpusLineItr.hasNext) {
+        val line = corpusLineItr.next
+        val Array(ep, rel, label) = line.stripLineEnd.split('\t')
+        var truth = true
+        if(label == "0")  truth = false
+        val s = getScore(ep, rel)
+        if(opts.writeOutput.value)  p.asInstanceOf[PrintWriter].write(rel + "\t0\t" + ep + "\t0\t" + s.toString + "\tmycode\n")
+        ans(relationVocab.get(rel)) = ans.getOrElseUpdate(relationVocab.get(rel), ArrayBuffer[(Double, Boolean)]()) += ((s,truth))
+      }
+    }
+    finally {
+      if(opts.writeOutput.value)  p.asInstanceOf[PrintWriter].close()
+    }
+    var predictionSize = 0
+    for(i <- ans.keys) {
+      ans(i) = rand.shuffle(ans(i))
+      predictionSize += ans(i).size
+    }
+    println("prediction size : ", predictionSize)
+    Evaluator.meanAveragePrecision(ans)
   }
 
   def readInFile(inFile : String): Map[String, ArrayBuffer[(String, String, String)]] ={

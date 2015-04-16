@@ -30,7 +30,7 @@ class TransE(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       println(s"Training iteration: $iteration")
       val st1 = System.currentTimeMillis()
 //      normalize(weights, exactlyOne = true)
-      val batches = (0 until (batchSize/trainingExamples.size)).map(batch => new MiniBatchExample(generateMiniBatch()))
+      val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch()))
 //      val batches = trainingExamples.map(e => makeExample(e._2, e._4, e._3))
       val st = System.currentTimeMillis()
       println("comuting gradients " + (st - st1) / 1000.0)

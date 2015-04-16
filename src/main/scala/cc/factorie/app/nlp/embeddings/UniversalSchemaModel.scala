@@ -37,6 +37,9 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
   val rand = new Random(0)
   val D = opts.dimension.value // default value is 200
 
+  // entPair, e1, e2, relation
+  protected var trainingExamples = List[(Int, Int, Int, Int)]()
+
   var entityCount:Int = -1
   var entPairSize: Int = -1 // no. of entity pairs
   var relationSize: Int = -1 // no. of relations
@@ -46,17 +49,15 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
   protected val entityVocab = new util.HashMap[String, Int]()
   protected val relationKey = new util.HashMap[String, Int]()
   protected val reverseRelationKey = new util.HashMap[Int, String]()
-  // entPair, e1, e2, relation
-  protected var trainingExamples = List[(Int, Int, Int, Int)]()
 
-  var tree = new mutable.HashMap[Int, treePosition]()
   protected val threads = opts.threads.value //  default value is 12
   protected val adaGradDelta = opts.delta.value // default value is 0.1
   val adaGradRate = opts.rate.value //  default value is 0.025
   val hierarchicalSoftMax = opts.hierSoftMax.value
+  var tree = new mutable.HashMap[Int, treePosition]()
 
   // IO Related
-  val corpus = opts.corpus.value // corpus input filename. Code takes cares of .gz extension 
+  val corpus = opts.corpus.value // corpus input filename. Code takes cares of .gz extension
   protected val outputFilename = opts.output.value // embeddings output filename
   protected val encoding = opts.encoding.value // Default is UTF8
   // data structures

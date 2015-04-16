@@ -110,7 +110,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
    * @param testTriplets test triples in form e1 relation e2
    * @return (hits@10, averageRank)
    */
-  def evaluate(testTriplets: Seq[(String, String, String)]): (Double, Double) = {
+  def avgRankHitsAt10(testTriplets: Seq[(String, String, String)]): (Double, Double) = {
 
     println(s"Evaluating on ${testTriplets.size} samples")
     val i = new AtomicInteger(0)

@@ -27,6 +27,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
       case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(corpus)), encoding).getLines
       case false => io.Source.fromInputStream(new FileInputStream(corpus), encoding).getLines
     }
+    val examples = new ArrayBuffer[(Int,Int, Int, Int)]()
     while (corpusLineItr.hasNext) {
       val line = corpusLineItr.next
       val Array(ep, rel, label) = line.stripLineEnd.split('\t')
@@ -37,12 +38,12 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
       val e1Key = entityVocab.get(e1)
       val e2Key = entityVocab.get(e2)
       val relKey = relationKey.get(rel)
-      if(testRels.contains(rel)) trainingExamples = (epKey, e1Key, e2Key, relKey) :: trainingExamples
+      if(testRels.contains(rel)) trainingExamples = examples += ((epKey, e1Key, e2Key, relKey))
       entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseBinaryTensor1(200000))
       entityPairFeatures(epKey).update(relKey, 1.0)
 
     }
-
+    trainingExamples = examples.toSeq
     entPairSize = entPairKey.size
     relationSize = relationKey.size
     trainingExamplesSize = trainingExamples.size
@@ -74,7 +75,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
       processed = 0
       val it = rand.shuffle(trainingExamples).grouped(groupSize);
       //println("match ", threads, groupSize)
-      var threadExamples = new ArrayBuffer[List[(Int, Int, Int, Int)]]()
+      var threadExamples = new ArrayBuffer[Seq[(Int, Int, Int, Int)]]()
       for(n <- 0 until threads)  threadExamples = threadExamples += rand.shuffle(it.next())
       Threading.parForeach(threadIds, threads)(threadId => workerThread(threadExamples(threadId)))
       if(i % opts.evalautionFrequency.value == 0) {

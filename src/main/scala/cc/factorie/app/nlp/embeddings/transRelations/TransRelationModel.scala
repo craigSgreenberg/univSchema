@@ -82,7 +82,6 @@ abstract class TransRelationModel(override val opts: EmbeddingOpts) extends Univ
 
   protected def generateMiniBatch(): Seq[Example] = {
     Seq.fill(batchSize)(trainingExamples(rand.nextInt(trainingExamples.size))).map { case (ePair, e1, e2, rel) =>
-//    trainTriplets.map { case (ePair, e1, e2, rel) =>
       makeExample(e1, rel + entityCount, e2)
     }
   }

@@ -12,20 +12,18 @@
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
 
-import java.util
-
-import cc.factorie.model.{ Parameters, Weights }
-import cc.factorie.optimize.{HogwildTrainer, Trainer, AdaGradRDA}
-import cc.factorie.la.{SparseHashTensor1, SparseBinaryTensor1, DenseTensor1}
-import cc.factorie.util.Threading
 import java.io._
-import java.util.zip.{ GZIPOutputStream, GZIPInputStream }
+import java.util
+import java.util.zip.GZIPInputStream
+
+import cc.factorie.la.{DenseTensor1, SparseBinaryTensor1}
+import cc.factorie.model.{Parameters, Weights}
+import cc.factorie.optimize.AdaGradRDA
+import cc.factorie.util.Threading
+
 import scala.collection.mutable
-import scala.util.control.Breaks._
-import scala.util.Random
-import java.util.HashMap
 import scala.collection.mutable.ArrayBuffer
-import java.util.HashSet
+import scala.util.Random
 
 abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters {
   //val entityPairFeatures = new mutable.HashMap[Int, ArrayBuffer[Int]]()
@@ -38,7 +36,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
   val D = opts.dimension.value // default value is 200
 
   // entPair, e1, e2, relation
-  protected var trainingExamples = List[(Int, Int, Int, Int)]()
+  protected var trainingExamples = Seq[(Int, Int, Int, Int)]()
 
   var entityCount:Int = -1
   var entPairSize: Int = -1 // no. of entity pairs
@@ -83,6 +81,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
       case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(corpus)), encoding).getLines()
       case false => io.Source.fromInputStream(new FileInputStream(corpus), encoding).getLines()
     }
+    val examples = new ArrayBuffer[(Int, Int, Int, Int)]()
     while (corpusLineItr.hasNext) {
       val line = corpusLineItr.next()
       val (ep, e1, e2, rel, label) = if(opts.parseTsv.value) parseTsv(line) else parseArvind(line)
@@ -90,10 +89,10 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
       if(!entityVocab.containsKey(e1))  entityVocab.put(e1, entityVocab.size())
       if(!entityVocab.containsKey(e2))  entityVocab.put(e2, entityVocab.size())
       if(!relationKey.containsKey(rel)) relationKey.put(rel, relationKey.size())
-      trainingExamples = (entPairKey.get(ep), entityVocab.get(e1), entityVocab.get(e2), relationKey.get(rel)) :: trainingExamples
+      examples += ((entPairKey.get(ep), entityVocab.get(e1), entityVocab.get(e2), relationKey.get(rel)))
       reverseRelationKey.put(relationKey.get(rel), rel)
     }
-
+    trainingExamples = examples.toSeq
     entPairSize = entPairKey.size
     entityCount = entityVocab.size
     relationSize = relationKey.size
@@ -137,7 +136,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
 
   def evaluate(file: String, iter: Int): Double = {
     var notfound = 0
-    val  corpusLineItr = io.Source.fromInputStream(new FileInputStream(file), encoding).getLines
+    val  corpusLineItr = io.Source.fromInputStream(new FileInputStream(file), encoding).getLines()
     val ans = scala.collection.mutable.Map[Int, ArrayBuffer[(Double, Boolean)]]()
     //val p = if(opts.writeOutput                                                                                                                                        .value)  new PrintWriter(new File(file + "_" + "output" + "_" + D.toString + "_" + adaGradRate.toString + "_" + opts.regularizer.value.toString + "_" + opts.negative.value.toString + "_" + iter.toString + "_"  + opts.hinge.value.toString + "_" + opts.wsabie.value.toString + "_" + opts.margin.value.toString))
     val fileName = file + "_" + "output" +  "_" + D.toString + "_" + adaGradRate.toString + "_" + opts.regularizer.value.toString + "_" + opts.negative.value.toString + "_" + iter.toString + "_"  + opts.hinge.value.toString + "_" + opts.wsabie.value.toString + "_" + opts.margin.value.toString + "_" + opts.treeFile.value.toString.split("/").reverse(0)
@@ -200,7 +199,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
           val st1 = System.currentTimeMillis()
           val it = rand.shuffle(trainingExamples).grouped(groupSize)
           //println("match ", threads, groupSize)
-          var threadExamples = new ArrayBuffer[List[(Int, Int, Int, Int)]]()
+          var threadExamples = new ArrayBuffer[Seq[(Int, Int, Int, Int)]]()
           for(n <- 0 until threads)  threadExamples = threadExamples += it.next()
           val st = System.currentTimeMillis()
           println("comuting gradients " + (st - st1) / 1000.0)
@@ -228,7 +227,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
    *
    * @param examples  entPair, e1, e2, relation
    */
-  protected def workerThread(examples: List[(Int, Int, Int, Int)]): Unit = {
+  protected def workerThread(examples: Seq[(Int, Int, Int, Int)]): Unit = {
     //println("processing: " + examples.size)
     examples.foreach(example => process(example._1, example._4))
   }

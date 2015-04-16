@@ -145,7 +145,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
     try{
       while (corpusLineItr.hasNext) {
         val line = corpusLineItr.next()
-        val Array(ep, rel, label) = line.stripLineEnd.split('\t')
+        val (ep, e1, e2, rel, label) = if(opts.parseTsv.value) parseTsv(line) else parseArvind(line)
         var truth = true
         if(label == "0")  truth = false
         if(entPairKey.containsKey(ep)) {

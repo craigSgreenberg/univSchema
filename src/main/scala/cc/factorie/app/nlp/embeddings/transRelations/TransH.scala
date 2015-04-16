@@ -39,7 +39,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       normalize(hyperPlanes, exactlyOne = true)
       (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
       softConstraints = calculateSoftConstraints()
-      val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch(trainingExamples, batchSize)))
+      val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch()))
       trainer.processExamples(batches)
     }
     println("Done learning embeddings. ")

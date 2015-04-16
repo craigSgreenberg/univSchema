@@ -23,18 +23,14 @@ class TransE(opts: EmbeddingOpts) extends TransRelationModel(opts) {
     trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
     //    trainer = new OnlineTrainer(weightsSet = this.parameters, optimizer = optimizer, maxIterations = Int.MaxValue, logEveryN = batchSize-1)
 
-    weights = (0 until entityCount + relationCount).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
+    weights = (0 until entityCount + relationSize).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
     optimizer.initializeWeights(this.parameters)
-
-    //    // normalize relation embeddings once
-    //    (entityCount until weights.size).par.foreach(weights(_).value.twoNormalize())
-    println(weights.size, entityCount, entityVocab.size(), relationCount, relationVocab.size())
 
     for (iteration <- 1 to iterations) {
       println(s"Training iteration: $iteration")
       val st1 = System.currentTimeMillis()
 //      normalize(weights, exactlyOne = true)
-      val batches = (0 until (trainTriplets.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch(trainTriplets, batchSize)))
+      val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch(trainingExamples, batchSize)))
       val st = System.currentTimeMillis()
       println("comuting gradients " + (st - st1) / 1000.0)
       trainer.processExamples(batches)
@@ -66,11 +62,11 @@ class TransE(opts: EmbeddingOpts) extends TransRelationModel(opts) {
    */
   def getScore(triple: (String, String, String)): Double = {
     val (e1, rel, e2) = triple
-    assert(entityVocab.containsKey(e1) && entityVocab.containsKey(e2) && relationVocab.containsKey(rel),
+    assert(entityVocab.containsKey(e1) && entityVocab.containsKey(e2) && relationKey.containsKey(rel),
       "Something was not in the vocab. Sorry")
     val e1Emb = weights(entityVocab.get(e1)).value
     val e2Emb = weights(entityVocab.get(e2)).value
-    val relEmb = weights(relationVocab.get(rel) + entityCount).value
+    val relEmb = weights(relationKey.get(rel) + entityCount).value
     getScore(e1Emb, e2Emb, relEmb)
   }
 
@@ -96,7 +92,7 @@ class TransE(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       val e2Id = entityVocab.get(e2)
       val e1Emb = weights(e1Id).value
       val e2Emb = weights(e2Id).value
-      val relEmb = weights(relationVocab.get(relation) + entityCount).value
+      val relEmb = weights(relationKey.get(relation) + entityCount).value
 
       var headRank = 0
       var tailRank = 0

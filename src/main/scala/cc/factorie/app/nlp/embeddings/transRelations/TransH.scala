@@ -27,22 +27,19 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
     trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
 //    trainer = new OnlineTrainer(weightsSet = this.parameters, optimizer = optimizer, maxIterations = Int.MaxValue, logEveryN = batchSize-1)
 
-    weights = (0 until entityCount + relationCount).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
-    hyperPlanes = (0 until relationCount).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
+    weights = (0 until entityCount + relationSize).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
+    hyperPlanes = (0 until relationSize).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
 
     optimizer.initializeWeights(this.parameters)
-
-    //    // normalize relation embeddings once
-    println(weights.size, entityCount, entityVocab.size(), relationCount, relationVocab.size())
 
     for (iteration <- 0 to iterations) {
       println(s"Training iteration: $iteration")
 
       normalize(weights, exactlyOne = false)
       normalize(hyperPlanes, exactlyOne = true)
-      (0 until relationCount).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
+      (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
       softConstraints = calculateSoftConstraints()
-      val batches = (0 until (trainTriplets.size / batchSize)).map(batch => new MiniBatchExample(generateMiniBatch(trainTriplets, batchSize)))
+      val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch(trainingExamples, batchSize)))
       trainer.processExamples(batches)
     }
     println("Done learning embeddings. ")
@@ -69,7 +66,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
   def calculateSoftConstraints(): Double =
   {
     val entityScore = weights.slice(0, entityCount).map(e => Math.max(0, e.value.twoNormSquared - 1.0)).sum
-    val relationProjectionScore = (0 until relationCount).map(i => {
+    val relationProjectionScore = (0 until relationSize).map(i => {
       val dr = weights(i + entityCount).value
       val wr = hyperPlanes(i).value
       val dot = dr.dot(wr)
@@ -86,11 +83,11 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
    */
   def getScore(triple: (String, String, String)): Double = {
     val (e1, rel, e2) = triple
-    assert(entityVocab.containsKey(e1) && entityVocab.containsKey(e2) && relationVocab.containsKey(rel),
+    assert(entityVocab.containsKey(e1) && entityVocab.containsKey(e2) && relationKey.containsKey(rel),
       "Something was not in the vocab. Sorry")
     val e1Emb = weights(entityVocab.get(e1)).value
     val e2Emb = weights(entityVocab.get(e2)).value
-    val relDex = relationVocab.get(rel)
+    val relDex = relationKey.get(rel)
     // gross indexing
     val relEmb = weights(relDex + entityCount).value
     val hPlaneDex = relDex
@@ -123,7 +120,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       val e2Id = entityVocab.get(e2)
       val e1Emb = weights(e1Id).value
       val e2Emb = weights(e2Id).value
-      val relId = relationVocab.get(relation)
+      val relId = relationKey.get(relation)
       val relEmb = weights(relId + entityCount).value
       val hyperPlane = hyperPlanes(relId).value
 

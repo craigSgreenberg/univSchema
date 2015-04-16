@@ -25,13 +25,13 @@ class TransE(opts: EmbeddingOpts) extends TransRelationModel(opts) {
 
     weights = (0 until entityCount + relationSize).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
     optimizer.initializeWeights(this.parameters)
-
+    val nBatches = trainingExamplesSize/batchSize
     for (iteration <- 1 to iterations) {
       println(s"Training iteration: $iteration")
       val st1 = System.currentTimeMillis()
 //      normalize(weights, exactlyOne = true)
-//      val batches = (0 until (train)).map(batch => new MiniBatchExample(generateMiniBatch()))
-      val batches = rand.shuffle(trainingExamples).map(e => makeExample(e._2, e._4, e._3))
+      val batches = (0 until nBatches).map(batch => new MiniBatchExample(generateMiniBatch()))
+//      val batches = rand.shuffle(trainingExamples).map(e => makeExample(e._2, e._4, e._3))
       val st = System.currentTimeMillis()
       println("comuting gradients " + (st - st1) / 1000.0)
       trainer.processExamples(batches)

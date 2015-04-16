@@ -12,6 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
 import java.nio.charset.Charset
+import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable.ArrayBuffer
 
 
@@ -38,5 +39,46 @@ object Evaluator {
   // convenience method
   def averagePrecision(classToPredictionAndLabel: scala.collection.mutable.Map[Int, Seq[(Double, Boolean)]]): Double = {
     throw new UnsupportedOperationException
+  }
+
+  /**
+   * for each test triplet, rank the correct answer amongst all corrupted head triplets
+   * and all corrupted tail triplets
+   * @param testData test data of form (ep, e1, e2, rel, label)
+   * @return (hits@10, averageRank)
+   */
+  def avgRankHitsAt10(model :UniversalSchemaModel, testData: ArrayBuffer[(String, String, String, String, String)])
+  : (Double, Double) = {
+
+    println(s"Evaluating on ${testData.size} samples")
+    val i = new AtomicInteger(0)
+    val tot = testData.size.toDouble
+    val ranks: Seq[Int] = testData.par.flatMap { case (ep, e1, e2, rel, label) =>
+      val posScore = model.getScore(ep, rel)
+      var headRank = 0
+      var tailRank = 0
+
+      // iterate over each other entity in dictionary
+      val entities = model.entityVocab.keySet().iterator()
+      while(entities.hasNext)
+      {
+        val negEnt = entities.next()
+        if (negEnt != e1) {
+          val negHeadScore = model.getScore(s"$negEnt,$e2", rel)
+          if (negHeadScore < posScore)
+            headRank += 1
+        }
+        if (negEnt != e2) {
+          val negTailScore = model.getScore(s"$e2,$negEnt", rel)
+          if (negTailScore < posScore)
+            tailRank += 1
+        }
+      }
+      val tmp = i.incrementAndGet()
+      if (tmp % 1000 == 0) println(tmp / tot)
+      Seq(headRank, tailRank)
+    }.seq
+    // return hits@10 and avg rank
+    (ranks.count(_ < 10).toDouble / ranks.size.toDouble, ranks.sum / ranks.length)
   }
 }

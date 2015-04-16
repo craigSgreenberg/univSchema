@@ -43,10 +43,10 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
   var relationSize: Int = -1 // no. of relations
   var trainingExamplesSize : Int = -1 //no. of training examples
 
-  protected val entPairKey = new util.HashMap[String, Int]()
-  protected val entityVocab = new util.HashMap[String, Int]()
-  protected val relationKey = new util.HashMap[String, Int]()
-  protected val reverseRelationKey = new util.HashMap[Int, String]()
+  val entPairKey = new util.HashMap[String, Int]()
+  val entityVocab = new util.HashMap[String, Int]()
+  val relationKey = new util.HashMap[String, Int]()
+  val reverseRelationKey = new util.HashMap[Int, String]()
 
   protected val threads = opts.threads.value //  default value is 12
   protected val adaGradDelta = opts.delta.value // default value is 0.1
@@ -142,10 +142,12 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
     val fileName = file + "_" + "output" +  "_" + D.toString + "_" + adaGradRate.toString + "_" + opts.regularizer.value.toString + "_" + opts.negative.value.toString + "_" + iter.toString + "_"  + opts.hinge.value.toString + "_" + opts.wsabie.value.toString + "_" + opts.margin.value.toString + "_" + opts.treeFile.value.toString.split("/").reverse(0)
     println(fileName)
     val p = if(opts.writeOutput.value)  new PrintWriter(new File(fileName))
+    val testSet = new ArrayBuffer[(String, String, String, String, String)]()
     try{
       while (corpusLineItr.hasNext) {
         val line = corpusLineItr.next()
         val (ep, e1, e2, rel, label) = if(opts.parseTsv.value) parseTsv(line) else parseArvind(line)
+        testSet += ((ep, e1, e2, rel, label))
         var truth = true
         if(label == "0")  truth = false
         if(entPairKey.containsKey(ep)) {
@@ -168,8 +170,11 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
     }
     println("prediction size : ", predictionSize)
     println("not found: ", notfound)
+    println("hits@10 and avgRank : " + Evaluator.avgRankHitsAt10(this, testSet))
+
     Evaluator.meanAveragePrecision(ans)
   }
+
 
   def getScore(ep : String, rel : String): Double ={
     getScore(entPairKey.get(ep), relationKey.get(rel))

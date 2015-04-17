@@ -31,8 +31,9 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
     hyperPlanes = (0 until relationSize).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
 
     optimizer.initializeWeights(this.parameters)
+    val nBatches = trainingExamplesSize/batchSize
 
-    for (iteration <- 0 to iterations) {
+    for (iteration <- 0 until iterations) {
       println(s"Training iteration: $iteration")
 
 //      normalize(weights, exactlyOne = false)
@@ -40,7 +41,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
 //      (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
       
       softConstraints = calculateSoftConstraints()
-      val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch()))
+      val batches = (0 until nBatches).map(batch => new MiniBatchExample(generateMiniBatch()))
       trainer.processExamples(batches)
     }
     println("Done learning embeddings. ")
@@ -94,13 +95,10 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
     val hPlaneDex = relDex
     val hyperPlane = hyperPlanes(hPlaneDex).value
 
-    getScore(e1Emb, e2Emb, relEmb, hyperPlane)
+    val e1Proj = e1Emb - hyperPlane.*(e1Emb.dot(hyperPlane))
+    val e2Proj = e2Emb - hyperPlane.*(e2Emb.dot(hyperPlane))
 
-  }
-
-  def getScore (e1Emb: Weights#Value, e2Emb: Weights#Value, relEmb: Weights#Value, hyperPlane: Weights#Value): Double =
-  {
-    val result = e2Emb - hyperPlane.*(e1Emb.dot(hyperPlane)) - relEmb
+    val result = e1Proj + relEmb - e2Proj
     if (l1) result.oneNorm else result.twoNorm
   }
 
@@ -129,8 +127,9 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       val e2Proj = e2Emb - hyperPlane.*(e2Emb.dot(hyperPlane))
 
       val posScore = if (l1) (e1Proj + relEmb - e2Proj).oneNorm else (e1Proj + relEmb - e2Proj).twoNorm
+//      println(posScore)
       // store for efficiency
-      val e1Rel = e2Proj + relEmb
+      val e1Rel = e1Proj + relEmb
       val relE2 = relEmb - e2Proj
 
       var headRank = 0
@@ -145,13 +144,13 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
 
           if (negativeId != e1Id) {
             val negHeadScore = if (l1) (e1Rel - negProj).oneNorm else (e1Rel - negProj).twoNorm
-//            println(posScore, negHeadScore)
+            if (posScore.isNaN || negHeadScore.isNaN) println(posScore, negHeadScore)
             if (negHeadScore < posScore)
               headRank += 1
           }
           if (negativeId != e2Id) {
             val negTailScore = if (l1) (negProj - relE2).oneNorm else (negProj - relE2).twoNorm
-//            println(posScore, negTailScore)
+            if (posScore.isNaN || negTailScore.isNaN) println(posScore, negTailScore)
 
             if (negTailScore < posScore)
               tailRank += 1

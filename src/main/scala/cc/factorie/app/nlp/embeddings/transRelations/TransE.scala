@@ -188,10 +188,8 @@ object TestTransE extends App {
   opts.parse(args)
 
   val transE = new TransE(opts)
-  // if data is in format [r1,r2 rel score] use parseArvind
   val train = transE.buildVocab()
   val test = transE.fileToTriplets(opts.testFile.value).toSeq.flatMap(eList => eList._2.toSet.toSeq)
-//  println(train.size, test.size)
   transE.learnEmbeddings()
   println(transE.avgRankHitsAt10(test))
 

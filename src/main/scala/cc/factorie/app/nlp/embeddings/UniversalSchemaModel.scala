@@ -131,7 +131,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
    */
   def parseTsv(line: String): (String, String, String, String, String) = {
     val Array(e1, rel, e2) = line.split("\t")
-    (s"$e1,$e2", e1, e2, rel, "1.0")
+    (s"$e1,$e2", e1, e2, rel, "1")
   }
 
   def evaluate(file: String, iter: Int): Double = {

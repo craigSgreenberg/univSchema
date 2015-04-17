@@ -38,6 +38,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       normalize(weights, exactlyOne = false)
       normalize(hyperPlanes, exactlyOne = true)
       (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
+      
       softConstraints = calculateSoftConstraints()
       val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch()))
       trainer.processExamples(batches)
@@ -223,24 +224,19 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
         gradient.accumulate(model.hyperPlanes(hPlaneDex), negGrad, -factor)
       }
       negSample += 1
-      model.orthoganal(e2NegEmb, hyperPlane)
-      model.orthoganal(e1NegEmb, hyperPlane)
     }
-    model.orthoganal(e1PosEmb, hyperPlane)
-    model.orthoganal(e2PosEmb, hyperPlane)
   }
 }
 
-object TestTransH extends App {
+object TestTransH extends App
+{
+  val opts = new EmbeddingOpts()
+  opts.parse(args)
 
-//  val opts = new EmbeddingOpts()
-//  opts.parse(args)
-//
-//  val transH = new TransH(opts)
-//  val train = transH.buildVocab(opts.corpus.value, transH.parseTsv)
-//  val test = transH.buildVocab(opts.testFile.value, transH.parseTsv)
-//  println(train.size, test.size)
-//  transH.trainModel(train)
-//  println(transH.evaluate(test))
+  val transH = new TransH(opts)
+  val train = transH.buildVocab()
+  val test = transH.fileToTriplets(opts.testFile.value).toSeq.flatMap(eList => eList._2.toSet.toSeq)
+  transH.learnEmbeddings()
+  println(transH.avgRankHitsAt10(test))
 
 }

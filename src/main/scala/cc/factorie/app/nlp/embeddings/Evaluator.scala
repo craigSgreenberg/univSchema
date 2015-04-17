@@ -14,7 +14,7 @@ package cc.factorie.app.nlp.embeddings
 import java.nio.charset.Charset
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable.ArrayBuffer
-
+import scala.collection.JavaConversions._
 
 object Evaluator {
   def meanAveragePrecision(classToPredictionAndLabel: scala.collection.mutable.Map[Int, ArrayBuffer[(Double, Boolean)]]): Double = {
@@ -45,11 +45,12 @@ object Evaluator {
    * for each test triplet, rank the correct answer amongst all corrupted head triplets
    * and all corrupted tail triplets
    * @param testData test data of form (ep, e1, e2, rel, label)
-   * @return (hits@10, averageRank)
+   * @return (%hits@10, averageRank)
    */
   def avgRankHitsAt10(model :UniversalSchemaModel, testData: Iterable[(String, String, String, String, String)])
   : (Double, Double) = {
 
+    val entities = model.entityVocab.keySet().toSet.toSeq
     println(s"Evaluating on ${testData.size} samples")
     val i = new AtomicInteger(0)
     val tot = testData.size.toDouble
@@ -57,12 +58,9 @@ object Evaluator {
       val posScore = model.getScore(ep, rel)
       var headRank = 0
       var tailRank = 0
-
       // iterate over each other entity in dictionary
-      val entities = model.entityVocab.keySet().iterator()
-      while(entities.hasNext)
+      entities.foreach(negEnt =>
       {
-        val negEnt = entities.next()
         if (negEnt != e1) {
           val negHeadScore = model.getScore(s"$negEnt,$e2", rel)
           if (negHeadScore < posScore)
@@ -73,7 +71,7 @@ object Evaluator {
           if (negTailScore < posScore)
             tailRank += 1
         }
-      }
+      })
       val tmp = i.incrementAndGet()
       if (tmp % 1000 == 0) println(tmp / tot)
       Seq(headRank, tailRank)

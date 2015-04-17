@@ -11,7 +11,7 @@ import cc.factorie.util.{DoubleSeq, DoubleAccumulator}
 /**
  * Created by pat on 4/3/15.
  */
-class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
+class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
 
   var hyperPlanes: Seq[Weights] = null
   val epsilon = 0.1
@@ -22,27 +22,25 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
   // Component-2
   def trainModel(trainTriplets: Seq[(String, String, String)]): Unit = {
     println("Learning Embeddings")
-        optimizer = new ConstantLearningRate(adaGradRate)
-//    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate)
+//        optimizer = new ConstantLearningRate(adaGradRate)
+    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate)
     trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
 //    trainer = new OnlineTrainer(weightsSet = this.parameters, optimizer = optimizer, maxIterations = Int.MaxValue, logEveryN = batchSize-1)
 
-    weights = (0 until entityCount + relationCount).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
-    hyperPlanes = (0 until relationCount).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
+    weights = (0 until entityCount + relationSize).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
+    hyperPlanes = (0 until relationSize).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
 
     optimizer.initializeWeights(this.parameters)
-
-    //    // normalize relation embeddings once
-    println(weights.size, entityCount, entityVocab.size(), relationCount, relationVocab.size())
 
     for (iteration <- 0 to iterations) {
       println(s"Training iteration: $iteration")
 
       normalize(weights, exactlyOne = false)
       normalize(hyperPlanes, exactlyOne = true)
-      (0 until relationCount).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
+      (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
+      
       softConstraints = calculateSoftConstraints()
-      val batches = (0 until (trainTriplets.size / batchSize)).map(batch => new MiniBatchExample(generateMiniBatch(trainTriplets, batchSize)))
+      val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch()))
       trainer.processExamples(batches)
     }
     println("Done learning embeddings. ")
@@ -69,7 +67,7 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
   def calculateSoftConstraints(): Double =
   {
     val entityScore = weights.slice(0, entityCount).map(e => Math.max(0, e.value.twoNormSquared - 1.0)).sum
-    val relationProjectionScore = (0 until relationCount).map(i => {
+    val relationProjectionScore = (0 until relationSize).map(i => {
       val dr = weights(i + entityCount).value
       val wr = hyperPlanes(i).value
       val dot = dr.dot(wr)
@@ -86,11 +84,11 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
    */
   def getScore(triple: (String, String, String)): Double = {
     val (e1, rel, e2) = triple
-    assert(entityVocab.containsKey(e1) && entityVocab.containsKey(e2) && relationVocab.containsKey(rel),
+    assert(entityVocab.containsKey(e1) && entityVocab.containsKey(e2) && relationKey.containsKey(rel),
       "Something was not in the vocab. Sorry")
     val e1Emb = weights(entityVocab.get(e1)).value
     val e2Emb = weights(entityVocab.get(e2)).value
-    val relDex = relationVocab.get(rel)
+    val relDex = relationKey.get(rel)
     // gross indexing
     val relEmb = weights(relDex + entityCount).value
     val hPlaneDex = relDex
@@ -113,7 +111,7 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
    * @param testTriplets test triples in form e1 relation e2
    * @return (hits@10, averageRank)
    */
-  def evaluate(testTriplets: Seq[(String, String, String)]): (Double, Double) = {
+  def avgRankHitsAt10(testTriplets: Seq[(String, String, String)]): (Double, Double) = {
 
     println(s"Evaluating on ${testTriplets.size} samples")
     val i = new AtomicInteger(0)
@@ -123,7 +121,7 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
       val e2Id = entityVocab.get(e2)
       val e1Emb = weights(e1Id).value
       val e2Emb = weights(e2Id).value
-      val relId = relationVocab.get(relation)
+      val relId = relationKey.get(relation)
       val relEmb = weights(relId + entityCount).value
       val hyperPlane = hyperPlanes(relId).value
 
@@ -170,6 +168,10 @@ class TransH(opts: TransRelationOpts) extends TransRelationModel(opts) {
     (ranks.count(_ < 10).toDouble / ranks.size.toDouble, ranks.sum / ranks.length)
   }
 
+  // override this function in your Embedding Model like SkipGramEmbedding or CBOWEmbedding
+  override protected def process(ep: Int, rel: Int): Unit = ???
+
+  override def getScore(ep: Int, rel: Int): Double = ???
 }
 
 class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1: Boolean = false) extends Example {
@@ -222,24 +224,19 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
         gradient.accumulate(model.hyperPlanes(hPlaneDex), negGrad, -factor)
       }
       negSample += 1
-      model.orthoganal(e2NegEmb, hyperPlane)
-      model.orthoganal(e1NegEmb, hyperPlane)
     }
-    model.orthoganal(e1PosEmb, hyperPlane)
-    model.orthoganal(e2PosEmb, hyperPlane)
   }
 }
 
-object TestTransH extends App {
-
-  val opts = new TransRelationOpts()
+object TestTransH extends App
+{
+  val opts = new EmbeddingOpts()
   opts.parse(args)
 
   val transH = new TransH(opts)
-  val train = transH.buildVocab(opts.train.value, transH.parseTsv)
-  val test = transH.buildVocab(opts.test.value, transH.parseTsv)
-  println(train.size, test.size)
-  transH.trainModel(train)
-  println(transH.evaluate(test))
+  val train = transH.buildVocab()
+  val test = transH.fileToTriplets(opts.testFile.value).toSeq.flatMap(eList => eList._2.toSet.toSeq)
+  transH.learnEmbeddings()
+  println(transH.avgRankHitsAt10(test))
 
 }

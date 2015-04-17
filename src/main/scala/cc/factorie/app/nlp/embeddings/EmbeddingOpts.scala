@@ -20,7 +20,7 @@ class EmbeddingOpts extends CmdOptions {
   val evalautionFrequency = new CmdOption("frequency", 10, "INT", "evaluation frequency")
   val dimension = new CmdOption("size", 200, "INT", "use <int> size of word vectors")
   val window = new CmdOption("window", null, "INT", "use <int> skip length between words")
-  val threads = new CmdOption("threads", 1, "INT", "use <int> threads")
+  val threads = new CmdOption("threads", 20, "INT", "use <int> threads")
   val negative = new CmdOption("negative", 1, "INT", "use <int> number of negative examples")
   val minCount = new CmdOption("min-count", null, "INT", "This will discard words that appear less than <int> times; default is 5")
   val ignoreStopWords = new CmdOption("ignore-stopwords", false, "BOOLEAN", "use <bool> to include or discard stopwords. Use 1 for discarding stopwords")
@@ -54,6 +54,10 @@ class EmbeddingOpts extends CmdOptions {
   // Maximum 14.3M * 0.7 = 10M words in the vocabulary (Don;t change if you understand how vocabBuilder works)
   val vocabSize = new CmdOption("max-vocab-size", null, "INT", "Max Vocabulary Size. Default Value is 2M . Reduce to 200k or 500k is you learn embeddings on small-data-set")
   val vocabHashSize = new CmdOption("vocab-hash-size", null, "INT", "Vocabulary hash size")
+  val batchSize = new CmdOption[Int]("batch-size", 1200, "INT", "Size of each mini batch")
+  val bernoulliSample = new CmdOption[Boolean]("bernoulli", false, "BOOLEAN", "Use bernoulli negative sampling, uniform otherwise.")
   val samplingTableSize = new CmdOption("sampling-table-size", null, "INT", "Sampling Table size")
+  val l1 = new CmdOption[Boolean]("l1", true, "BOOLEAN", "Use l1 distance, l2 otherwise")
+  val parseTsv = new CmdOption[Boolean]("parseTsv", false, "BOOLEAN", "Tsv formated training files")
 
 }

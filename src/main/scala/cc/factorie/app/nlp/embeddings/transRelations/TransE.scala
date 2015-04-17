@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.embeddings.transRelations
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import cc.factorie.app.nlp.embeddings.{EmbeddingOpts, LiteHogwildTrainer, TensorUtils}
+import cc.factorie.app.nlp.embeddings.{Evaluator, EmbeddingOpts, LiteHogwildTrainer, TensorUtils}
 import cc.factorie.la.{DenseTensor1, WeightsMapAccumulator}
 import cc.factorie.model.Weights
 import cc.factorie.optimize._
@@ -51,11 +51,6 @@ class TransE(opts: EmbeddingOpts) extends TransRelationModel(opts) {
   }
 
 
-  override def getScore(ep: String, rel: String): Double = {
-    val Array(e1, e2) = ep.split(",")
-    getScore((e1, rel, e2))
-  }
-  
   /**
    * Score a relation triplet
    * @param triple (e1, rel, e2)
@@ -174,8 +169,6 @@ class TransEExample(model: TransRelationModel, e1PosDex: Int, relDex: Int, e2Pos
         gradient.accumulate(model.weights(relDex), posGrad - negGrad, factor)
         gradient.accumulate(model.weights(e1NegDex), negGrad, -factor)
         gradient.accumulate(model.weights(e2NegDex), negGrad, factor)
-//        gradient.accumulate(model.weights(relDex), negGrad, -factor)
-
       }
       negSample += 1
     }
@@ -191,6 +184,7 @@ object TestTransE extends App {
   val train = transE.buildVocab()
   val test = transE.fileToTriplets(opts.testFile.value).toSeq.flatMap(eList => eList._2.toSet.toSeq)
   transE.learnEmbeddings()
-  println(transE.avgRankHitsAt10(test))
+  println(transE.avgRankHitsAt10(test.map(x => (x._2, x._4, x._3))))
+  println(Evaluator.avgRankHitsAt10(transE, test))
 
 }

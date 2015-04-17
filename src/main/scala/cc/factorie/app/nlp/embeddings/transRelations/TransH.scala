@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.embeddings.transRelations
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import cc.factorie.app.nlp.embeddings._
+import cc.factorie.app.nlp.embeddings.{Evaluator, EmbeddingOpts, LiteHogwildTrainer, TensorUtils}
 import cc.factorie.la.{DenseTensor1, WeightsMapAccumulator}
 import cc.factorie.model.Weights
 import cc.factorie.optimize._
@@ -20,7 +20,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
   var softConstraints = 0.0
 
   // Component-2
-  def trainModel(trainTriplets: Seq[(String, String, String)]): Unit = {
+  override def learnEmbeddings(): Unit = {
     println("Learning Embeddings")
 //        optimizer = new ConstantLearningRate(adaGradRate)
     optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate)
@@ -31,17 +31,27 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
     hyperPlanes = (0 until relationSize).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
 
     optimizer.initializeWeights(this.parameters)
+    val nBatches = trainingExamplesSize/batchSize
 
-    for (iteration <- 0 to iterations) {
+    for (iteration <- 0 until iterations) {
       println(s"Training iteration: $iteration")
+      val st1 = System.currentTimeMillis()
 
-      normalize(weights, exactlyOne = false)
-      normalize(hyperPlanes, exactlyOne = true)
-      (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
+//      normalize(weights, exactlyOne = false)
+//      normalize(hyperPlanes, exactlyOne = true)
+//      (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
       
       softConstraints = calculateSoftConstraints()
-      val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch()))
+      val batches = (0 until nBatches).map(batch => new MiniBatchExample(generateMiniBatch()))
+      val st = System.currentTimeMillis()
+      println("comuting gradients " + (st - st1) / 1000.0)
       trainer.processExamples(batches)
+      val st2 = System.currentTimeMillis()
+      println("finished comuting gradients " + (st2 - st) / 1000.0)
+      if(iteration % opts.evalautionFrequency.value == 0) {
+        println("Dev MAP after " + iteration + " iterations: " + evaluate(opts.devFile.value, iteration))
+        println("Test MAP after " + iteration + " iterations: " + evaluate(opts.testFile.value, iteration))
+      }
     }
     println("Done learning embeddings. ")
     //store()
@@ -71,7 +81,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       val dr = weights(i + entityCount).value
       val wr = hyperPlanes(i).value
       val dot = dr.dot(wr)
-      Math.max(0, (dot*dot / dr.twoNormSquared) / epsilonSquared)
+      Math.max(0, (dot*dot / dr.twoNormSquared) - epsilonSquared)
     }).sum
     C * (entityScore + relationProjectionScore)
   }
@@ -94,13 +104,10 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
     val hPlaneDex = relDex
     val hyperPlane = hyperPlanes(hPlaneDex).value
 
-    getScore(e1Emb, e2Emb, relEmb, hyperPlane)
+    val e1Proj = e1Emb - hyperPlane.*(e1Emb.dot(hyperPlane))
+    val e2Proj = e2Emb - hyperPlane.*(e2Emb.dot(hyperPlane))
 
-  }
-
-  def getScore (e1Emb: Weights#Value, e2Emb: Weights#Value, relEmb: Weights#Value, hyperPlane: Weights#Value): Double =
-  {
-    val result = e2Emb - hyperPlane.*(e1Emb.dot(hyperPlane)) - relEmb
+    val result = e1Proj + relEmb - e2Proj
     if (l1) result.oneNorm else result.twoNorm
   }
 
@@ -129,8 +136,9 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       val e2Proj = e2Emb - hyperPlane.*(e2Emb.dot(hyperPlane))
 
       val posScore = if (l1) (e1Proj + relEmb - e2Proj).oneNorm else (e1Proj + relEmb - e2Proj).twoNorm
+//      println(posScore)
       // store for efficiency
-      val e1Rel = e2Proj + relEmb
+      val e1Rel = e1Proj + relEmb
       val relE2 = relEmb - e2Proj
 
       var headRank = 0
@@ -145,13 +153,13 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
 
           if (negativeId != e1Id) {
             val negHeadScore = if (l1) (e1Rel - negProj).oneNorm else (e1Rel - negProj).twoNorm
-            println(posScore, negHeadScore)
+            if (posScore.isNaN || negHeadScore.isNaN) println(posScore, negHeadScore)
             if (negHeadScore < posScore)
               headRank += 1
           }
           if (negativeId != e2Id) {
             val negTailScore = if (l1) (negProj - relE2).oneNorm else (negProj - relE2).twoNorm
-            println(posScore, negTailScore)
+            if (posScore.isNaN || negTailScore.isNaN) println(posScore, negTailScore)
 
             if (negTailScore < posScore)
               tailRank += 1
@@ -161,7 +169,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       }
       val tmp = i.incrementAndGet()
       if (tmp % 1000 == 0) println(tmp / tot)
-      println(headRank, tailRank)
+//      println(headRank, tailRank)
       Seq(headRank, tailRank)
     }.seq
     // return hits@10 and avg rank
@@ -185,19 +193,24 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
     // gross indexing
     val hPlaneDex = relDex - model.entityCount
     val hyperPlane = model.hyperPlanes(hPlaneDex).value
+    // project e1 and e2
+    val e1PosProj = e1PosEmb - hyperPlane.*(e1PosEmb.dot(hyperPlane))
+    val e2PosProj = e2PosEmb - hyperPlane.*(e2PosEmb.dot(hyperPlane))
 
     var negSample = 0
     while (negSample < model.negativeSamples) {
       // draw negative sample randomly either from head or tail
-      val (e1NegDex, e2NegDex) =
-        if (model.rand.nextInt(2) == 0) (e1PosDex, model.negativeSampleEntity(None))
-        else (model.negativeSampleEntity(None), e2PosDex)
+      val (e1NegDex, e2NegDex) = model.negativeSample(e1PosDex, e2PosDex, relDex-model.entityCount, None)
 
       val e1NegEmb = model.weights(e1NegDex).value
       val e2NegEmb = model.weights(e2NegDex).value
+      val e1NegProj = e1NegEmb - hyperPlane.*(e1NegEmb.dot(hyperPlane))
+      val e2NegProj = e2NegEmb - hyperPlane.*(e2NegEmb.dot(hyperPlane))
 
-      val posGrad = e2PosEmb - hyperPlane.*(e1PosEmb.dot(hyperPlane)) - relEmb
-      val negGrad = e2NegEmb - hyperPlane.*(e1NegEmb.dot(hyperPlane)) - relEmb
+      val posGrad = e2PosProj - e1PosProj - relEmb
+      val negGrad = e2NegProj - e1NegProj - relEmb
+      posGrad.twoNormalize()
+      negGrad.twoNormalize()
 
       // gamma + pos - neg
       val objective = (if (l1) model.gamma + posGrad.oneNorm - negGrad.oneNorm
@@ -216,12 +229,10 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
       if (gradient != null && objective > 0.0) {
         gradient.accumulate(model.weights(e1PosDex), posGrad, factor)
         gradient.accumulate(model.weights(e2PosDex), posGrad, -factor)
-        gradient.accumulate(model.weights(relDex), posGrad, factor)
-        gradient.accumulate(model.hyperPlanes(hPlaneDex), posGrad, factor)
+        gradient.accumulate(model.weights(relDex), posGrad - negGrad, factor)
+        gradient.accumulate(model.hyperPlanes(hPlaneDex), posGrad - negGrad, factor)
         gradient.accumulate(model.weights(e1NegDex), negGrad, -factor)
         gradient.accumulate(model.weights(e2NegDex), negGrad, factor)
-        gradient.accumulate(model.weights(relDex), negGrad, -factor)
-        gradient.accumulate(model.hyperPlanes(hPlaneDex), negGrad, -factor)
       }
       negSample += 1
     }
@@ -237,6 +248,8 @@ object TestTransH extends App
   val train = transH.buildVocab()
   val test = transH.fileToTriplets(opts.testFile.value).toSeq.flatMap(eList => eList._2.toSet.toSeq)
   transH.learnEmbeddings()
-  println(transH.avgRankHitsAt10(test))
+  println(transH.avgRankHitsAt10(test.map(x => (x._2, x._4, x._3))))
+
+  println(Evaluator.avgRankHitsAt10(transH, test))
 
 }

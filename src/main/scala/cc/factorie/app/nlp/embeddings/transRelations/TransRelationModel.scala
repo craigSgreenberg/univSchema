@@ -33,16 +33,16 @@ abstract class TransRelationModel(override val opts: EmbeddingOpts) extends Univ
   protected var relationBernoulli : Map[Int, Double] = null
 
 
-  def fileToTriplets(inFile : String): Map[String, ArrayBuffer[(String, String, String)]] ={
+  def fileToTriplets(inFile : String): Map[String, ArrayBuffer[(String, String, String, String, String)]] ={
     val corpusLineItr = inFile.endsWith(".gz") match {
       case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(inFile)), encoding).getLines()
       case false => io.Source.fromInputStream(new FileInputStream(inFile), encoding).getLines()
     }
-    val relationMap = new mutable.HashMap[String, ArrayBuffer[(String, String, String)]]
+    val relationMap = new mutable.HashMap[String, ArrayBuffer[(String, String, String, String, String)]]
     while (corpusLineItr.hasNext) {
       val line = corpusLineItr.next()
       val (entPair, e1, e2, relation, score) = if (opts.parseTsv.value) parseTsv(line) else parseArvind(line)
-      relationMap.put(relation, relationMap.getOrElse(relation, new ArrayBuffer()) += ((e1, relation, e2)))
+      relationMap.put(relation, relationMap.getOrElse(relation, new ArrayBuffer()) += ((s"$e1,$e2", e1, e2, relation, "1")))
     }
     relationMap.toMap
   }
@@ -78,6 +78,11 @@ abstract class TransRelationModel(override val opts: EmbeddingOpts) extends Univ
       if (exactlyOne || len > 1.0)
         vec /= len
     })
+  }
+
+  override def getScore(ep: String, rel: String): Double = {
+    val Array(e1, e2) = ep.split(",")
+    getScore((e1, rel, e2))
   }
 
   protected def generateMiniBatch(): Seq[Example] = {

@@ -67,7 +67,7 @@ object Evaluator {
             headRank += 1
         }
         if (negEnt != e2) {
-          val negTailScore = model.getScore(s"$e2,$negEnt", rel)
+          val negTailScore = model.getScore(s"$e1,$negEnt", rel)
           if (negTailScore < posScore)
             tailRank += 1
         }

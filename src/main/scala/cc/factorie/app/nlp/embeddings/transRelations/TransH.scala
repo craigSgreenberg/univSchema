@@ -145,13 +145,13 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
 
           if (negativeId != e1Id) {
             val negHeadScore = if (l1) (e1Rel - negProj).oneNorm else (e1Rel - negProj).twoNorm
-            println(posScore, negHeadScore)
+//            println(posScore, negHeadScore)
             if (negHeadScore < posScore)
               headRank += 1
           }
           if (negativeId != e2Id) {
             val negTailScore = if (l1) (negProj - relE2).oneNorm else (negProj - relE2).twoNorm
-            println(posScore, negTailScore)
+//            println(posScore, negTailScore)
 
             if (negTailScore < posScore)
               tailRank += 1
@@ -161,7 +161,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       }
       val tmp = i.incrementAndGet()
       if (tmp % 1000 == 0) println(tmp / tot)
-      println(headRank, tailRank)
+//      println(headRank, tailRank)
       Seq(headRank, tailRank)
     }.seq
     // return hits@10 and avg rank

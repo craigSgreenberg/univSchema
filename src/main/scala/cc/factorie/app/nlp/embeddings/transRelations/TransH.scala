@@ -35,6 +35,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
 
     for (iteration <- 0 until iterations) {
       println(s"Training iteration: $iteration")
+      val st1 = System.currentTimeMillis()
 
 //      normalize(weights, exactlyOne = false)
 //      normalize(hyperPlanes, exactlyOne = true)
@@ -42,7 +43,15 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       
       softConstraints = calculateSoftConstraints()
       val batches = (0 until nBatches).map(batch => new MiniBatchExample(generateMiniBatch()))
+      val st = System.currentTimeMillis()
+      println("comuting gradients " + (st - st1) / 1000.0)
       trainer.processExamples(batches)
+      val st2 = System.currentTimeMillis()
+      println("finished comuting gradients " + (st2 - st) / 1000.0)
+      if(iteration % opts.evalautionFrequency.value == 0) {
+        println("Dev MAP after " + iteration + " iterations: " + evaluate(opts.devFile.value, iteration))
+        println("Test MAP after " + iteration + " iterations: " + evaluate(opts.testFile.value, iteration))
+      }
     }
     println("Done learning embeddings. ")
     //store()

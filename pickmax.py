@@ -3,10 +3,10 @@ max = 0
 config = ""
 dev = {}
 test = {}
-listFile = open("list", 'r')
+listFile = open(sys.argv[1], 'r')
 for l in listFile:
 	f = open(l.strip(), 'r')
-	overall = f.readlines()[2].strip()
+	overall = f.readlines()[3].strip()
 	f.close()
 	
 	f = open(l.strip(), 'r')

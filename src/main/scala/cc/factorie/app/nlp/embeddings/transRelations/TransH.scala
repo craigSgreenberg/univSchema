@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.embeddings.transRelations
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import cc.factorie.app.nlp.embeddings._
+import cc.factorie.app.nlp.embeddings.{Evaluator, EmbeddingOpts, LiteHogwildTrainer, TensorUtils}
 import cc.factorie.la.{DenseTensor1, WeightsMapAccumulator}
 import cc.factorie.model.Weights
 import cc.factorie.optimize._
@@ -20,7 +20,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
   var softConstraints = 0.0
 
   // Component-2
-  def trainModel(trainTriplets: Seq[(String, String, String)]): Unit = {
+  override def learnEmbeddings(): Unit = {
     println("Learning Embeddings")
 //        optimizer = new ConstantLearningRate(adaGradRate)
     optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate)
@@ -35,9 +35,9 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
     for (iteration <- 0 to iterations) {
       println(s"Training iteration: $iteration")
 
-      normalize(weights, exactlyOne = false)
-      normalize(hyperPlanes, exactlyOne = true)
-      (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
+//      normalize(weights, exactlyOne = false)
+//      normalize(hyperPlanes, exactlyOne = true)
+//      (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
       
       softConstraints = calculateSoftConstraints()
       val batches = (0 until (trainingExamples.size/batchSize)).map(batch => new MiniBatchExample(generateMiniBatch()))
@@ -71,7 +71,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       val dr = weights(i + entityCount).value
       val wr = hyperPlanes(i).value
       val dot = dr.dot(wr)
-      Math.max(0, (dot*dot / dr.twoNormSquared) / epsilonSquared)
+      Math.max(0, (dot*dot / dr.twoNormSquared) - epsilonSquared)
     }).sum
     C * (entityScore + relationProjectionScore)
   }
@@ -185,19 +185,24 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
     // gross indexing
     val hPlaneDex = relDex - model.entityCount
     val hyperPlane = model.hyperPlanes(hPlaneDex).value
+    // project e1 and e2
+    val e1PosProj = e1PosEmb - hyperPlane.*(e1PosEmb.dot(hyperPlane))
+    val e2PosProj = e2PosEmb - hyperPlane.*(e2PosEmb.dot(hyperPlane))
 
     var negSample = 0
     while (negSample < model.negativeSamples) {
       // draw negative sample randomly either from head or tail
-      val (e1NegDex, e2NegDex) =
-        if (model.rand.nextInt(2) == 0) (e1PosDex, model.negativeSampleEntity(None))
-        else (model.negativeSampleEntity(None), e2PosDex)
+      val (e1NegDex, e2NegDex) = model.negativeSample(e1PosDex, e2PosDex, relDex-model.entityCount, None)
 
       val e1NegEmb = model.weights(e1NegDex).value
       val e2NegEmb = model.weights(e2NegDex).value
+      val e1NegProj = e1NegEmb - hyperPlane.*(e1NegEmb.dot(hyperPlane))
+      val e2NegProj = e2NegEmb - hyperPlane.*(e2NegEmb.dot(hyperPlane))
 
-      val posGrad = e2PosEmb - hyperPlane.*(e1PosEmb.dot(hyperPlane)) - relEmb
-      val negGrad = e2NegEmb - hyperPlane.*(e1NegEmb.dot(hyperPlane)) - relEmb
+      val posGrad = e2PosProj - e1PosProj - relEmb
+      val negGrad = e2NegProj - e1NegProj - relEmb
+      posGrad.twoNormalize()
+      negGrad.twoNormalize()
 
       // gamma + pos - neg
       val objective = (if (l1) model.gamma + posGrad.oneNorm - negGrad.oneNorm
@@ -216,12 +221,10 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
       if (gradient != null && objective > 0.0) {
         gradient.accumulate(model.weights(e1PosDex), posGrad, factor)
         gradient.accumulate(model.weights(e2PosDex), posGrad, -factor)
-        gradient.accumulate(model.weights(relDex), posGrad, factor)
-        gradient.accumulate(model.hyperPlanes(hPlaneDex), posGrad, factor)
+        gradient.accumulate(model.weights(relDex), posGrad - negGrad, factor)
+        gradient.accumulate(model.hyperPlanes(hPlaneDex), posGrad - negGrad, factor)
         gradient.accumulate(model.weights(e1NegDex), negGrad, -factor)
         gradient.accumulate(model.weights(e2NegDex), negGrad, factor)
-        gradient.accumulate(model.weights(relDex), negGrad, -factor)
-        gradient.accumulate(model.hyperPlanes(hPlaneDex), negGrad, -factor)
       }
       negSample += 1
     }
@@ -237,6 +240,8 @@ object TestTransH extends App
   val train = transH.buildVocab()
   val test = transH.fileToTriplets(opts.testFile.value).toSeq.flatMap(eList => eList._2.toSet.toSeq)
   transH.learnEmbeddings()
+  println(transH.avgRankHitsAt10(test.map(x => (x._2, x._4, x._3))))
+
   println(Evaluator.avgRankHitsAt10(transH, test))
 
 }

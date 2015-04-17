@@ -169,8 +169,6 @@ class TransEExample(model: TransRelationModel, e1PosDex: Int, relDex: Int, e2Pos
         gradient.accumulate(model.weights(relDex), posGrad - negGrad, factor)
         gradient.accumulate(model.weights(e1NegDex), negGrad, -factor)
         gradient.accumulate(model.weights(e2NegDex), negGrad, factor)
-//        gradient.accumulate(model.weights(relDex), negGrad, -factor)
-
       }
       negSample += 1
     }

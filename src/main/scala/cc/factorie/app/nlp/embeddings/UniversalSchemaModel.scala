@@ -18,7 +18,7 @@ import java.util.zip.GZIPInputStream
 
 import cc.factorie.la.{DenseTensor1, SparseBinaryTensor1}
 import cc.factorie.model.{Parameters, Weights}
-import cc.factorie.optimize.AdaGradRDA
+import cc.factorie.optimize.{GradientOptimizer, AdaGradRDA}
 import cc.factorie.util.Threading
 
 import scala.collection.mutable
@@ -61,7 +61,7 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
   // data structures
   //protected var vocab: VocabBuilder = null
   protected var trainer: LiteHogwildTrainer = null // modified version of factorie's hogwild trainer for speed by removing logging and other unimportant things. Expose processExample() instead of processExamples()
-  protected var optimizer: AdaGradRDA = null
+  protected var optimizer: GradientOptimizer = null
 
   var weights: Seq[Weights] = null // EMBEDDINGS . Will be initialized in learnEmbeddings() after buildVocab() is called first
   var nodeWeights: Seq[Weights] = null

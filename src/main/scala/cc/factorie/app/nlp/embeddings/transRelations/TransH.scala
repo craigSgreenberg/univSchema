@@ -237,6 +237,6 @@ object TestTransH extends App
   val train = transH.buildVocab()
   val test = transH.fileToTriplets(opts.testFile.value).toSeq.flatMap(eList => eList._2.toSet.toSeq)
   transH.learnEmbeddings()
-  println(transH.avgRankHitsAt10(test))
+  println(Evaluator.avgRankHitsAt10(transH, test))
 
 }

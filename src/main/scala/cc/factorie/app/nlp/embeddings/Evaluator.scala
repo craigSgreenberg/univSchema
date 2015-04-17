@@ -47,13 +47,13 @@ object Evaluator {
    * @param testData test data of form (ep, e1, e2, rel, label)
    * @return (hits@10, averageRank)
    */
-  def avgRankHitsAt10(model :UniversalSchemaModel, testData: ArrayBuffer[(String, String, String, String, String)])
+  def avgRankHitsAt10(model :UniversalSchemaModel, testData: Iterable[(String, String, String, String, String)])
   : (Double, Double) = {
 
     println(s"Evaluating on ${testData.size} samples")
     val i = new AtomicInteger(0)
     val tot = testData.size.toDouble
-    val ranks: Seq[Int] = testData.par.flatMap { case (ep, e1, e2, rel, label) =>
+    val ranks: Seq[Int] = testData.toSeq.par.flatMap { case (ep, e1, e2, rel, label) =>
       val posScore = model.getScore(ep, rel)
       var headRank = 0
       var tailRank = 0

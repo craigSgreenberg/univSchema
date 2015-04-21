@@ -135,11 +135,11 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       val e1Proj = e1Emb - hyperPlane.*(e1Emb.dot(hyperPlane))
       val e2Proj = e2Emb - hyperPlane.*(e2Emb.dot(hyperPlane))
 
-      val posScore = if (l1) (e1Proj + relEmb - e2Proj).oneNorm else (e1Proj + relEmb - e2Proj).twoNorm
-//      println(posScore)
       // store for efficiency
       val e1Rel = e1Proj + relEmb
       val relE2 = relEmb - e2Proj
+
+      val posScore = if (l1) (e1Proj + relEmb - e2Proj).oneNorm else (e1Proj + relEmb - e2Proj).twoNorm
 
       var headRank = 0
       var tailRank = 0
@@ -147,19 +147,17 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       var negativeId = 0
       while (negativeId < entityCount) {
         // dont self rank
-        if (negativeId != e1Id || negativeId != e2Id) {
+        if (negativeId != e1Id && negativeId != e2Id) {
           val negEmb = weights(negativeId).value
           val negProj = negEmb - hyperPlane.*(negEmb.dot(hyperPlane))
 
           if (negativeId != e1Id) {
             val negHeadScore = if (l1) (e1Rel - negProj).oneNorm else (e1Rel - negProj).twoNorm
-            if (posScore.isNaN || negHeadScore.isNaN) println(posScore, negHeadScore)
             if (negHeadScore < posScore)
               headRank += 1
           }
           if (negativeId != e2Id) {
             val negTailScore = if (l1) (negProj - relE2).oneNorm else (negProj - relE2).twoNorm
-            if (posScore.isNaN || negTailScore.isNaN) println(posScore, negTailScore)
 
             if (negTailScore < posScore)
               tailRank += 1
@@ -207,6 +205,7 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
       val e1NegProj = e1NegEmb - hyperPlane.*(e1NegEmb.dot(hyperPlane))
       val e2NegProj = e2NegEmb - hyperPlane.*(e2NegEmb.dot(hyperPlane))
 
+      // gradients
       val posGrad = e2PosProj - e1PosProj - relEmb
       val negGrad = e2NegProj - e1NegProj - relEmb
       posGrad.twoNormalize()
@@ -227,12 +226,26 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
 
       // hinge loss
       if (gradient != null && objective > 0.0) {
-        gradient.accumulate(model.weights(e1PosDex), posGrad, factor)
-        gradient.accumulate(model.weights(e2PosDex), posGrad, -factor)
+        // scale by (1-w)
+        val oneMinusW = new DenseTensor1(model.D, 1)-hyperPlane
+        val posScaled = posGrad
+        posScaled *= oneMinusW
+        val negScaled = negGrad
+        negScaled *= oneMinusW
+
+        gradient.accumulate(model.weights(e1PosDex), posScaled, factor)
+        gradient.accumulate(model.weights(e2PosDex), posScaled, -factor)
+        // dont scale
         gradient.accumulate(model.weights(relDex), posGrad - negGrad, factor)
-        gradient.accumulate(model.hyperPlanes(hPlaneDex), posGrad - negGrad, factor)
-        gradient.accumulate(model.weights(e1NegDex), negGrad, -factor)
-        gradient.accumulate(model.weights(e2NegDex), negGrad, factor)
+        // scale by (1-w)
+        gradient.accumulate(model.weights(e1NegDex), negScaled, -factor)
+        gradient.accumulate(model.weights(e2NegDex), negScaled, factor)
+
+        posGrad *= (e2PosEmb-e1PosEmb)
+        negGrad *= (e2NegEmb-e1NegEmb)
+        val hGradScaled = posGrad - negGrad
+        // scale by (t-h) and (t'-h')
+        gradient.accumulate(model.hyperPlanes(hPlaneDex), hGradScaled, factor)
       }
       negSample += 1
     }

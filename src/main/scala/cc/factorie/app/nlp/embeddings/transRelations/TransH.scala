@@ -208,8 +208,8 @@ class TransHExample(model: TransH, e1PosDex: Int, relDex: Int, e2PosDex: Int, l1
       // gradients
       val posGrad = e2PosProj - e1PosProj - relEmb
       val negGrad = e2NegProj - e1NegProj - relEmb
-      posGrad.twoNormalize()
-      negGrad.twoNormalize()
+//      posGrad.twoNormalize()
+//      negGrad.twoNormalize()
 
       // gamma + pos - neg
       val objective = (if (l1) model.gamma + posGrad.oneNorm - negGrad.oneNorm

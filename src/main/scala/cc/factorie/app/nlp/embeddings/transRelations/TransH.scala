@@ -147,7 +147,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       var negativeId = 0
       while (negativeId < entityCount) {
         // dont self rank
-        if (negativeId != e1Id && negativeId != e2Id) {
+        if (negativeId != e1Id || negativeId != e2Id) {
           val negEmb = weights(negativeId).value
           val negProj = negEmb - hyperPlane.*(negEmb.dot(hyperPlane))
 
@@ -157,7 +157,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
               headRank += 1
           }
           if (negativeId != e2Id) {
-            val negTailScore = if (l1) (negProj - relE2).oneNorm else (negProj - relE2).twoNorm
+            val negTailScore = if (l1) (negProj + relE2).oneNorm else (negProj + relE2).twoNorm
 
             if (negTailScore < posScore)
               tailRank += 1

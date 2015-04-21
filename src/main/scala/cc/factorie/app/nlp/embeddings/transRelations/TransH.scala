@@ -22,9 +22,9 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
   // Component-2
   override def learnEmbeddings(): Unit = {
     println("Learning Embeddings")
-//        optimizer = new ConstantLearningRate(adaGradRate)
-    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate)
-    trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
+        optimizer = new ConstantLearningRate(adaGradRate)
+    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate, r)
+//    trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
 //    trainer = new OnlineTrainer(weightsSet = this.parameters, optimizer = optimizer, maxIterations = Int.MaxValue, logEveryN = batchSize-1)
 
     weights = (0 until entityCount + relationSize).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
@@ -37,9 +37,9 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       println(s"Training iteration: $iteration")
       val st1 = System.currentTimeMillis()
 
-//      normalize(weights, exactlyOne = false)
-//      normalize(hyperPlanes, exactlyOne = true)
-//      (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
+      normalize(weights, exactlyOne = false)
+      normalize(hyperPlanes, exactlyOne = true)
+      (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
       
       softConstraints = calculateSoftConstraints()
       val batches = (0 until nBatches).map(batch => new MiniBatchExample(generateMiniBatch()))
@@ -249,7 +249,6 @@ object TestTransH extends App
   val test = transH.fileToTriplets(opts.testFile.value).toSeq.flatMap(eList => eList._2.toSet.toSeq)
   transH.learnEmbeddings()
   println(transH.avgRankHitsAt10(test.map(x => (x._2, x._4, x._3))))
-
   println(Evaluator.avgRankHitsAt10(transH, test))
 
 }

@@ -19,7 +19,8 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     while (testcorpusLineItr.hasNext) {
       val rel = testcorpusLineItr.next.stripLineEnd
       //val Array(ep, rel, label) = line.stripLineEnd.split('\t')
-      val relKey = relationKey.getOrElseUpdate(rel, relationKey.size)
+      //val relKey = relationKey.getOrElseUpdate(rel, relationKey.size)
+      //if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
       testRels.add(rel)
     }
 

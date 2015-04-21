@@ -23,7 +23,7 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
   override def learnEmbeddings(): Unit = {
     println("Learning Embeddings")
 //        optimizer = new ConstantLearningRate(adaGradRate)
-    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate, r)
+    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate, l2=opts.regularizer.value)
     trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
 //    trainer = new OnlineTrainer(weightsSet = this.parameters, optimizer = optimizer, maxIterations = Int.MaxValue, logEveryN = batchSize-1)
 

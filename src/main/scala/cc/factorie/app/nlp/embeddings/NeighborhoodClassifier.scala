@@ -14,14 +14,15 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
 
 
   override def buildVocab(): Unit ={
-    val  testcorpusLineItr = io.Source.fromInputStream(new FileInputStream(opts.testFile.value), encoding).getLines
+
+    val  testcorpusLineItr = io.Source.fromInputStream(new FileInputStream(opts.testRelationsFile.value), encoding).getLines
     while (testcorpusLineItr.hasNext) {
-      val line = testcorpusLineItr.next
-      val Array(ep, rel, label) = line.stripLineEnd.split('\t')
-      if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
-      val relKey = relationKey.get(rel)
+      val rel = testcorpusLineItr.next.stripLineEnd
+      //val Array(ep, rel, label) = line.stripLineEnd.split('\t')
+      val relKey = relationKey.getOrElseUpdate(rel, relationKey.size)
       testRels.add(rel)
     }
+
     println("Number of test relations ", testRels.size)
     val corpusLineItr = corpus.endsWith(".gz") match {
       case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(corpus)), encoding).getLines

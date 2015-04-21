@@ -45,6 +45,7 @@ class EmbeddingOpts extends CmdOptions {
   val corpus = new CmdOption("train", "", "STRING", "train file")
   val devFile = new CmdOption("dev", "", "STRING", "dev file")
   val testFile = new CmdOption("test", "", "STRING", "test file")
+  val testRelationsFile = new CmdOption("testRelationsFile", "", "STRING", "test relations file")
   val treeFile = new CmdOption("tree", "", "STRING", "tree file")
   val output = new CmdOption("output", "", "STRING", "Use <file> to save the resulting word vectors")
   val binary = new CmdOption("binary", false, "BOOLEAN", "use true for storing .gz format and false for plain txt format. Both stores in ISO-8859-15 Encoding")

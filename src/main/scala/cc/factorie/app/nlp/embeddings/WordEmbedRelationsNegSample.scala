@@ -6,6 +6,7 @@ import cc.factorie.la.{DenseTensor1, WeightsMapAccumulator}
 import cc.factorie.model.Weights
 import cc.factorie.optimize.Example
 import cc.factorie.util.DoubleAccumulator
+import scala.collection.JavaConversions._
 
 import scala.io.Source
 
@@ -40,7 +41,7 @@ class WordEmbedRelationsNegSample(override val opts: EmbeddingOpts) extends Univ
    */
   def randomlyInitializeWordEmbeddings(): Unit =
   {
-    val relWords = relationKey.keysIterator.flatMap(_.split("\\s+")).toSet
+    val relWords = relationKey.keySet().toList.flatMap(_.split("\\s+")).toSet
     wordEmbedD = D
     wordEmbedVocabSize = relWords.size
     vocab = new Array[String](wordEmbedVocabSize)

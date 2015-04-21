@@ -35,12 +35,12 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
       val Array(ep, rel, label) = line.stripLineEnd.split('\t')
       if(!(entPairKey.containsKey(ep)))  entPairKey.put(ep, entPairKey.size())
       if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
-      val epKey = entPairKey.get(ep)
-      val Array(e1, e2) = ep.split(",")
-      val e1Key = entityVocab.get(e1)
-      val e2Key = entityVocab.get(e2)
-      val relKey = relationKey.get(rel)
-      if(testRels.contains(rel)) trainingExamples = examples += ((epKey, e1Key, e2Key, relKey))
+      val epKey:Int = entPairKey.get(ep)
+      //val Array(e1, e2) = ep.split(",")
+      //val e1Key = entityVocab.get(e1)
+      //val e2Key = entityVocab.get(e2)
+      val relKey:Int = relationKey.get(rel)
+      if(testRels.contains(rel)) trainingExamples = examples += ((epKey, 0, 0, relKey))
       entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseBinaryTensor1(200000))
       entityPairFeatures(epKey).update(relKey, 1.0)
 
@@ -78,7 +78,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
       val it = rand.shuffle(trainingExamples).grouped(groupSize);
       //println("match ", threads, groupSize)
       var threadExamples = new ArrayBuffer[Seq[(Int, Int, Int, Int)]]()
-      for(n <- 0 until threads)  threadExamples = threadExamples += rand.shuffle(it.next())
+      for(n <- 0 until threads)  threadExamples = threadExamples += it.next()
       Threading.parForeach(threadIds, threads)(threadId => workerThread(threadExamples(threadId)))
       if(i % opts.evalautionFrequency.value == 0) {
         println("Dev MAP after " + i + " iterations: " + evaluate(opts.devFile.value, i))

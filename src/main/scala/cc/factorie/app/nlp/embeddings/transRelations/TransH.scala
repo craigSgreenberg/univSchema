@@ -22,8 +22,8 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
   // Component-2
   override def learnEmbeddings(): Unit = {
     println("Learning Embeddings")
-//        optimizer = new ConstantLearningRate(adaGradRate)
-    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate, l2=opts.regularizer.value)
+        optimizer = new ConstantLearningRate(adaGradRate)
+//    optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate, l2=opts.regularizer.value)
     trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
 //    trainer = new OnlineTrainer(weightsSet = this.parameters, optimizer = optimizer, maxIterations = Int.MaxValue, logEveryN = batchSize-1)
 
@@ -37,9 +37,9 @@ class TransH(opts: EmbeddingOpts) extends TransRelationModel(opts) {
       println(s"Training iteration: $iteration")
       val st1 = System.currentTimeMillis()
 
-//      normalize(weights, exactlyOne = false)
-//      normalize(hyperPlanes, exactlyOne = true)
-//      (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
+      normalize(weights.slice(0, entityCount), exactlyOne = false)
+      normalize(hyperPlanes, exactlyOne = true)
+      (0 until relationSize).foreach(i => orthoganal(weights(i+entityCount).value, hyperPlanes(i).value))
       
       softConstraints = calculateSoftConstraints()
       val batches = (0 until nBatches).map(batch => new MiniBatchExample(generateMiniBatch()))

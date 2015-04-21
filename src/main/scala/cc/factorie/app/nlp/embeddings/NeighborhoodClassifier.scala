@@ -20,7 +20,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
       val rel = testcorpusLineItr.next.stripLineEnd
       //val Array(ep, rel, label) = line.stripLineEnd.split('\t')
       //val relKey = relationKey.getOrElseUpdate(rel, relationKey.size)
-      //if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
+      if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
       testRels.add(rel)
     }
 
@@ -40,7 +40,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
       //val e1Key = entityVocab.get(e1)
       //val e2Key = entityVocab.get(e2)
       val relKey:Int = relationKey.get(rel)
-      if(testRels.contains(rel)) trainingExamples = examples += ((epKey, 0, 0, relKey))
+      if(testRels.contains(rel)) examples += ((epKey, 0, 0, relKey))
       entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseBinaryTensor1(200000))
       entityPairFeatures(epKey).update(relKey, 1.0)
 

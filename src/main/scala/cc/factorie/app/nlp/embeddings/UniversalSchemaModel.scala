@@ -120,8 +120,8 @@ abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters 
    */
   def parseArvind(line: String): (String, String, String, String, String) = {
     val Array(entities, relation, score) = line.split("\t")
-    val Array(e1, e2) = entities.split(",")
-    (entities, e1, e2, relation, score)
+    //val Array(e1, e2) = entities.split(",")
+    (entities, "", "", relation, score)
   }
 
   /**

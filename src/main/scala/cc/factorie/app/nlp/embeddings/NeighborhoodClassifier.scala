@@ -30,8 +30,10 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
       println(thisCorpus)
       println(encoding)
       val corpusLineItr = thisCorpus.endsWith(".gz") match {
-        case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), encoding).getLines
-        case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), encoding).getLines
+        //case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), encoding).getLines
+        //case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), encoding).getLines
+        case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), "UTF-16").getLines
+        case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), "UTF-16").getLines
       }
       while (corpusLineItr.hasNext) {
         val line = corpusLineItr.next

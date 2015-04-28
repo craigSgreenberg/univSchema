@@ -26,14 +26,13 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     println("Number of test relations ", testRels.size)
     val examples = new ArrayBuffer[(Int,Int, Int, Int)]()
 
-    def ingestCorpus(thisCorpus:String, relMap:util.HashMap[String, Int], isLabelSpace:Boolean, startIndex:Int):Int = {
+    def ingestCorpus(thisCorpus:String, relMap:util.HashMap[String, Int], isLabelSpace:Boolean, startIndex:Int, enc:String):Int = {
       println(thisCorpus)
-      println(encoding)
       val corpusLineItr = thisCorpus.endsWith(".gz") match {
         //case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), encoding).getLines
         //case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), encoding).getLines
-        case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), "UTF-16").getLines
-        case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), "UTF-16").getLines
+        case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), enc).getLines
+        case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), enc).getLines
       }
       while (corpusLineItr.hasNext) {
         val line = corpusLineItr.next
@@ -54,9 +53,9 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     }
 
     var numDim = 0
-    if (!opts.corpus.value.isEmpty) numDim += ingestCorpus(corpus, relationKey, isLabelSpace = true, numDim)
-    if (!opts.freebaseWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.freebaseWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim)
-    if (!opts.wikiWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.wikiWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim)
+    if (!opts.corpus.value.isEmpty) numDim += ingestCorpus(corpus, relationKey, isLabelSpace = true, numDim, "UTF-8")
+    if (!opts.freebaseWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.freebaseWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim, "UTF-16")
+    if (!opts.wikiWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.wikiWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim, "UTF-8")
     trainingExamples = examples.toSeq
     entPairSize = entPairKey.size
     relationSize = relationKey.size

@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.embeddings
 
 import cc.factorie.optimize.{AdaGradRDA, Example}
 import cc.factorie.util.{Threading, DoubleAccumulator}
-import cc.factorie.la.{SparseBinaryTensor1, SparseHashTensor1, DenseTensor1, WeightsMapAccumulator}
+import cc.factorie.la._
 import java.util.zip.GZIPInputStream
 import java.io.{File, PrintWriter, FileInputStream}
 import scala.collection.mutable.ArrayBuffer
@@ -44,7 +44,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
         //val e2Key = entityVocab.get(e2)
         val relKey:Int = startIndex + relMap.get(rel)
         if(isLabelSpace && testRels.contains(rel)) examples += ((epKey, 0, 0, relKey))
-        entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseBinaryTensor1(200000))
+        entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseTensor1(200000))
         entityPairFeatures(epKey).update(relKey, label.toFloat)
       }
       startIndex + relMap.size()
@@ -135,7 +135,7 @@ class NeighborhoodClassifierExample(model: UniversalSchemaModel, ep: Int, rel:In
       if(negEp == -1) return
       model.processed += 1
       val epFeatures =   model.entityPairFeatures(ep)
-      val negEpFeatures: SparseBinaryTensor1 =   model.entityPairFeatures(negEp)
+      val negEpFeatures: SparseTensor1 =   model.entityPairFeatures(negEp)
 
       {
         //+ve example

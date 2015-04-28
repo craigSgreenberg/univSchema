@@ -16,7 +16,7 @@ import java.io._
 import java.util
 import java.util.zip.GZIPInputStream
 
-import cc.factorie.la.{DenseTensor1, SparseBinaryTensor1}
+import cc.factorie.la.{SparseTensor1, DenseTensor1, SparseBinaryTensor1}
 import cc.factorie.model.{Parameters, Weights}
 import cc.factorie.optimize.AdaGradRDA
 import cc.factorie.util.Threading
@@ -27,7 +27,7 @@ import scala.util.Random
 
 abstract class UniversalSchemaModel(val opts: EmbeddingOpts) extends Parameters {
   //val entityPairFeatures = new mutable.HashMap[Int, ArrayBuffer[Int]]()
-  val entityPairFeatures = new mutable.HashMap[Int, SparseBinaryTensor1]()
+  val entityPairFeatures = new mutable.HashMap[Int, SparseTensor1]()
   var classifierWeights: Seq[Weights] = null
   val testRels: util.HashSet[String] = new util.HashSet[String]()
   var processed = 0

@@ -27,6 +27,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     val examples = new ArrayBuffer[(Int,Int, Int, Int)]()
 
     def ingestCorpus(thisCorpus:String, relMap:util.HashMap[String, Int], isLabelSpace:Boolean, startIndex:Int):Int = {
+      println(thisCorpus)
       val corpusLineItr = thisCorpus.endsWith(".gz") match {
         case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), encoding).getLines
         case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), encoding).getLines

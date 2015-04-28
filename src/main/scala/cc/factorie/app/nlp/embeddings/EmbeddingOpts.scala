@@ -43,6 +43,8 @@ class EmbeddingOpts extends CmdOptions {
   val saveVocabFile = new CmdOption("save-vocab", null, "STRING", "save vocab file")
   val loadVocabFile = new CmdOption("load-vocab", null, "STRING", "load the vocab file") // atleast one of them  should be given. save-vocab or load-vocab
   val corpus = new CmdOption("train", "", "STRING", "train file")
+  val freebaseWordFeatures = new CmdOption("free-word", "", "STRING", "freebase word features file")
+  val wikiWordFeatures = new CmdOption("wiki-word", "", "STRING", "wikipedia word features file")
   val devFile = new CmdOption("dev", "", "STRING", "dev file")
   val testFile = new CmdOption("test", "", "STRING", "test file")
   val testRelationsFile = new CmdOption("testRelationsFile", "", "STRING", "test relations file")

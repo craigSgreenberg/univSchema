@@ -1,6 +1,5 @@
 package cc.factorie.app.nlp.embeddings
 
-import scala.collection.mutable
 import cc.factorie.optimize.{AdaGradRDA, Example}
 import cc.factorie.util.{Threading, DoubleAccumulator}
 import cc.factorie.la.{SparseBinaryTensor1, SparseHashTensor1, DenseTensor1, WeightsMapAccumulator}
@@ -8,7 +7,7 @@ import java.util.zip.GZIPInputStream
 import java.io.{File, PrintWriter, FileInputStream}
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.model.Weights
-
+import java.util
 
 class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends UniversalSchemaModel(opts) {
 
@@ -25,26 +24,35 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     }
 
     println("Number of test relations ", testRels.size)
-    val corpusLineItr = corpus.endsWith(".gz") match {
-      case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(corpus)), encoding).getLines
-      case false => io.Source.fromInputStream(new FileInputStream(corpus), encoding).getLines
-    }
     val examples = new ArrayBuffer[(Int,Int, Int, Int)]()
-    while (corpusLineItr.hasNext) {
-      val line = corpusLineItr.next
-      val Array(ep, rel, label) = line.stripLineEnd.split('\t')
-      if(!(entPairKey.containsKey(ep)))  entPairKey.put(ep, entPairKey.size())
-      if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
-      val epKey:Int = entPairKey.get(ep)
-      //val Array(e1, e2) = ep.split(",")
-      //val e1Key = entityVocab.get(e1)
-      //val e2Key = entityVocab.get(e2)
-      val relKey:Int = relationKey.get(rel)
-      if(testRels.contains(rel)) examples += ((epKey, 0, 0, relKey))
-      entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseBinaryTensor1(200000))
-      entityPairFeatures(epKey).update(relKey, 1.0)
 
+    def ingestCorpus(thisCorpus:String, relMap:util.HashMap[String, Int], isLabelSpace:Boolean, startIndex:Int):Int = {
+      val corpusLineItr = thisCorpus.endsWith(".gz") match {
+        case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), encoding).getLines
+        case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), encoding).getLines
+      }
+      while (corpusLineItr.hasNext) {
+        val line = corpusLineItr.next
+        val Array(ep, rel, label) = line.stripLineEnd.split('\t')
+        if(!(entPairKey.containsKey(ep)))  entPairKey.put(ep, entPairKey.size())
+        //if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
+        if(!(relMap.containsKey(rel))) relMap.put(rel, relMap.size())
+        val epKey:Int = entPairKey.get(ep)
+        //val Array(e1, e2) = ep.split(",")
+        //val e1Key = entityVocab.get(e1)
+        //val e2Key = entityVocab.get(e2)
+        val relKey:Int = startIndex + relMap.get(rel)
+        if(isLabelSpace && testRels.contains(rel)) examples += ((epKey, 0, 0, relKey))
+        entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseBinaryTensor1(200000))
+        entityPairFeatures(epKey).update(relKey, label.toFloat)
+      }
+      startIndex + relMap.size()
     }
+
+    var numDim = 0
+    if (opts.corpus.hasValue) numDim += ingestCorpus(corpus, relationKey, isLabelSpace = true, numDim)
+    if (opts.freebaseWordFeatures.hasValue) numDim += ingestCorpus(opts.freebaseWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim)
+    if (opts.wikiWordFeatures.hasValue) numDim += ingestCorpus(opts.wikiWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim)
     trainingExamples = examples.toSeq
     entPairSize = entPairKey.size
     relationSize = relationKey.size

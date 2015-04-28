@@ -51,7 +51,6 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     }
 
     var numDim = 0
-    println(corpus)
     if (opts.corpus.hasValue) numDim += ingestCorpus(corpus, relationKey, isLabelSpace = true, numDim)
     if (opts.freebaseWordFeatures.hasValue) numDim += ingestCorpus(opts.freebaseWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim)
     if (opts.wikiWordFeatures.hasValue) numDim += ingestCorpus(opts.wikiWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim)

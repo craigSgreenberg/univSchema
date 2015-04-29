@@ -27,7 +27,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     val examples = new ArrayBuffer[(Int,Int, Int, Int)]()
 
     def ingestCorpus(thisCorpus:String, relMap:util.HashMap[String, Int], isLabelSpace:Boolean, startIndex:Int):Int = { //, enc:String, vbs:Boolean=false):Int = {
-      println(thisCorpus)
+      //println(thisCorpus)
       val corpusLineItr = thisCorpus.endsWith(".gz") match {
         case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), encoding).getLines
         case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), encoding).getLines
@@ -72,7 +72,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate, l2 = opts.regularizer.value)
     //weights = (0 until entPairSize).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
     // for hierarchical softmax
-    nodeWeights =  (0 until testRels.size).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(200000, 0), rand)))
+    nodeWeights =  (0 until testRels.size).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(2000000, 0), rand)))
     // set for paragraph vector
     //parWeights =   (0 until docNum).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0))))
     optimizer.initializeWeights(this.parameters)

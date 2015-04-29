@@ -36,6 +36,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
       }
       while (corpusLineItr.hasNext) {
         val line = corpusLineItr.next
+        if (vbs) println(line)
         val Array(ep, rel, label) = line.stripLineEnd.split('\t')
         if(!(entPairKey.containsKey(ep)))  entPairKey.put(ep, entPairKey.size())
         //if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
@@ -53,9 +54,9 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     }
 
     var numDim = 0
-    if (!opts.corpus.value.isEmpty) numDim += ingestCorpus(corpus, relationKey, isLabelSpace = true, numDim, "UTF-8")
+    if (!opts.corpus.value.isEmpty) numDim += ingestCorpus(corpus, relationKey, isLabelSpace = true, numDim, "UTF-8",vbs=false)
     if (!opts.freebaseWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.freebaseWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim, "iso-8859-1", vbs=true)
-    if (!opts.wikiWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.wikiWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim, "UTF-8")
+    if (!opts.wikiWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.wikiWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim, "UTF-8", vbs=false)
     trainingExamples = examples.toSeq
     entPairSize = entPairKey.size
     relationSize = relationKey.size

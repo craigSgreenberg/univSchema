@@ -51,7 +51,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
         //val e2Key = entityVocab.get(e2)
         val relKey:Int = startIndex + relMap.get(rel)
         if(isLabelSpace && testRels.contains(rel)) examples += ((epKey, 0, 0, relKey))
-        entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseTensor1(200000))
+        entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseTensor1(2000000))
         entityPairFeatures(epKey).update(relKey, label.toFloat)
         if (vbs) println("COMPLETE")
       }

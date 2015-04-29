@@ -39,11 +39,11 @@ def write_freebase_features(filepath, vocab_map, outfilepath, sep='\t'):
         reformat_freebase_features(filepath, vocab_map, do_write)
 
 def main():
-    infilepath = '/Users/csgreenberg/workspace/data/iesl/clueweb2012/freebase_features/unarchived/firstParaFeatures'
-    vocab_map_filepath = '/Users/csgreenberg/workspace/data/iesl/clueweb2012/freebase_features/unarchived/featureMap'
+    infilepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/freebase_word_features/unarchived/firstParaFeatures'
+    vocab_map_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/freebase_word_features/unarchived/featureMap'
     vocab_map = get_vocab_map(vocab_map_filepath)
     #print_freebase_features(infilepath, vocab_map)
-    outfilepath = '/Users/csgreenberg/workspace/data/iesl/clueweb2012/freebase_features/unarchived/freebase_word_features.tsv'
+    outfilepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/freebase_word_features/unarchived/freebase_word_features.tsv'
     write_freebase_features(infilepath, vocab_map, outfilepath)
 
 

@@ -26,7 +26,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     println("Number of test relations ", testRels.size)
     val examples = new ArrayBuffer[(Int,Int, Int, Int)]()
 
-    def ingestCorpus(thisCorpus:String, relMap:util.HashMap[String, Int], isLabelSpace:Boolean, startIndex:Int, enc:String, vbs:Boolean):Int = {
+    def ingestCorpus(thisCorpus:String, relMap:util.HashMap[String, Int], isLabelSpace:Boolean, startIndex:Int, enc:String):Int = {
       println(thisCorpus)
       val corpusLineItr = thisCorpus.endsWith(".gz") match {
         //case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), encoding).getLines
@@ -36,11 +36,6 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
       }
       while (corpusLineItr.hasNext) {
         val line = corpusLineItr.next
-        if (vbs){
-          println(line)
-          Console.println(line)
-          Console.flush()
-        }
         val Array(ep, rel, label) = line.stripLineEnd.split('\t')
         if(!(entPairKey.containsKey(ep)))  entPairKey.put(ep, entPairKey.size())
         //if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
@@ -53,15 +48,14 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
         if(isLabelSpace && testRels.contains(rel)) examples += ((epKey, 0, 0, relKey))
         entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseTensor1(2000000))
         entityPairFeatures(epKey).update(relKey, label.toFloat)
-        if (vbs) println("COMPLETE")
       }
       startIndex + relMap.size()
     }
 
     var numDim = 0
-    if (!opts.corpus.value.isEmpty) numDim += ingestCorpus(corpus, relationKey, isLabelSpace = true, numDim, "UTF-8", vbs=false)
-    if (!opts.freebaseWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.freebaseWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim, "UTF-8", vbs=false)
-    if (!opts.wikiWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.wikiWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim, "UTF-8",vbs=true)
+    if (!opts.corpus.value.isEmpty) numDim += ingestCorpus(corpus, relationKey, isLabelSpace = true, numDim, "UTF-8")
+    if (!opts.freebaseWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.freebaseWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim, "iso-8859-1")
+    if (!opts.wikiWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.wikiWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim, "UTF-8")
     trainingExamples = examples.toSeq
     entPairSize = entPairKey.size
     relationSize = relationKey.size

@@ -26,17 +26,17 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     println("Number of test relations ", testRels.size)
     val examples = new ArrayBuffer[(Int,Int, Int, Int)]()
 
-    def ingestCorpus(thisCorpus:String, relMap:util.HashMap[String, Int], isLabelSpace:Boolean, startIndex:Int, enc:String, vbs:Boolean=false):Int = {
+    def ingestCorpus(thisCorpus:String, relMap:util.HashMap[String, Int], isLabelSpace:Boolean, startIndex:Int):Int = { //, enc:String, vbs:Boolean=false):Int = {
       println(thisCorpus)
       val corpusLineItr = thisCorpus.endsWith(".gz") match {
-        //case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), encoding).getLines
-        //case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), encoding).getLines
-        case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), enc).getLines
-        case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), enc).getLines
+        case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), encoding).getLines
+        case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), encoding).getLines
+        //case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(thisCorpus)), enc).getLines
+        //case false => io.Source.fromInputStream(new FileInputStream(thisCorpus), enc).getLines
       }
       while (corpusLineItr.hasNext) {
         val line = corpusLineItr.next
-        if (vbs) println(line)
+        //if (vbs) println(line)
         val Array(ep, rel, label) = line.stripLineEnd.split('\t')
         if(!(entPairKey.containsKey(ep)))  entPairKey.put(ep, entPairKey.size())
         //if(!(relationKey.containsKey(rel))) relationKey.put(rel, relationKey.size())
@@ -54,9 +54,9 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     }
 
     var numDim = 0
-    if (!opts.corpus.value.isEmpty) numDim += ingestCorpus(corpus, relationKey, isLabelSpace = true, numDim, "UTF-8",vbs=false)
-    if (!opts.freebaseWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.freebaseWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim, "UTF-8", vbs=true)
-    if (!opts.wikiWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.wikiWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim, "UTF-8", vbs=false)
+    if (!opts.corpus.value.isEmpty) numDim += ingestCorpus(corpus, relationKey, isLabelSpace = true, numDim)//, "UTF-8",vbs=false)
+    if (!opts.freebaseWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.freebaseWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim)//, "UTF-8", vbs=true)
+    if (!opts.wikiWordFeatures.value.isEmpty) numDim += ingestCorpus(opts.wikiWordFeatures.value, new util.HashMap[String, Int](), isLabelSpace = false, numDim)//, "UTF-8", vbs=false)
     trainingExamples = examples.toSeq
     entPairSize = entPairKey.size
     relationSize = relationKey.size

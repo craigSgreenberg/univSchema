@@ -62,5 +62,5 @@ class EmbeddingOpts extends CmdOptions {
   val samplingTableSize = new CmdOption("sampling-table-size", null, "INT", "Sampling Table size")
   val l1 = new CmdOption[Boolean]("l1", true, "BOOLEAN", "Use l1 distance, l2 otherwise")
   val parseTsv = new CmdOption[Boolean]("parseTsv", false, "BOOLEAN", "Tsv formated training files")
-
+  val featureSize = new CmdOption[Int]("feature-size", 2500000, "INT", "Max Feature Space Dimensionality")
 }

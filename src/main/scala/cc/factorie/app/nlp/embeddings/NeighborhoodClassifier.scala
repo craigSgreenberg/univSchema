@@ -47,7 +47,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
         //val e2Key = entityVocab.get(e2)
         val relKey:Int = startIndex + relMap.get(rel)
         if(isLabelSpace && testRels.contains(rel)) examples += ((epKey, 0, 0, relKey))
-        entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseTensor1(2000000))
+        entityPairFeatures(epKey) = entityPairFeatures.getOrElseUpdate(epKey, new SparseTensor1(opts.featureSize.value))
         entityPairFeatures(epKey).update(relKey, label.toFloat)
       }
       startIndex + relMap.size()
@@ -72,7 +72,7 @@ class NeighborhoodClassifier (override val opts: EmbeddingOpts) extends Universa
     optimizer = new AdaGradRDA(delta = adaGradDelta, rate = adaGradRate, l2 = opts.regularizer.value)
     //weights = (0 until entPairSize).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0), rand))) // initialized using wordvec random
     // for hierarchical softmax
-    nodeWeights =  (0 until testRels.size).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(2000000, 0), rand)))
+    nodeWeights =  (0 until testRels.size).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(opts.featureSize.value, 0), rand)))
     // set for paragraph vector
     //parWeights =   (0 until docNum).map(i => Weights(TensorUtils.setToRandom1(new DenseTensor1(D, 0))))
     optimizer.initializeWeights(this.parameters)

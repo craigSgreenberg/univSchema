@@ -10,7 +10,7 @@ def load_clueweb_counts(filepath, sep='\t'):
             if not line:
                 continue
             freebaseid = line.split(sep)[0]
-            d(freebaseid) += 1
+            d[freebaseid] += 1
     return d
 
 def histogram_clueweb_test(filepath, clueweb_counts, sep='\t'):

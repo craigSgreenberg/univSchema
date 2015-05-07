@@ -24,9 +24,9 @@ def histogram_clueweb_test(filepath, clueweb_counts, sep='\t'):
             d[freebaseid] = clueweb_counts[freebaseid]
     print 'freebase loaded'
     print 'starting counting'
-    Counter(d.values())
+    cntr = Counter(d.values())
     print 'counting complete'
-    keys = Counter.elements()
+    keys = cntr.elements()
     keys.sort()
     for key in keys:
         print key, Counter[key]

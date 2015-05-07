@@ -35,7 +35,7 @@ def main():
     print 'loading clueweb'
     clueweb_filepath = '/iesl/canvas/proj/processedClueweb12/clueweb/clueweb_entity_types.v2.tsv'
     clueweb_counts = load_clueweb_counts(clueweb_filepath)
-    print clueweb_counts.values()
+    print clueweb_counts.values().sort()
     print 'clueweb loaded'
     print 'loading freebase'
     freebase_test_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/msrFreebaseTest70.v0.tsv'

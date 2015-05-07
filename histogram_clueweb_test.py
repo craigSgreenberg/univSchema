@@ -26,10 +26,10 @@ def histogram_clueweb_test(filepath, clueweb_counts, sep='\t'):
     print 'starting counting'
     cntr = Counter(d.values())
     print 'counting complete'
-    keys = list(cntr.elements())
-    keys.sort()
-    for key in keys:
-        print key, Counter[key]
+    #keys = list(cntr.elements())
+    #keys.sort()
+    for cnt, cnt_of_cnts in cntr.most_common():
+        print cnt, cnt_of_cnts
 
 def main():
     print 'loading clueweb'

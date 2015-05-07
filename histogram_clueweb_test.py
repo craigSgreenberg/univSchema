@@ -3,7 +3,7 @@ from collections import defaultdict
 from collections import Counter
 
 def load_clueweb_counts(filepath, sep='\t'):
-    d = defaultdict(0)
+    d = defaultdict(int)
     with open(filepath) as f:
         for line in f:
             line = line.strip()

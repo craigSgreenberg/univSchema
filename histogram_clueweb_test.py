@@ -26,7 +26,7 @@ def histogram_clueweb_test(filepath, clueweb_counts, sep='\t'):
     print 'starting counting'
     Counter(d.values())
     print 'counting complete'
-    keys = Counter.keys()
+    keys = Counter.elements()
     keys.sort()
     for key in keys:
         print key, Counter[key]

@@ -22,12 +22,21 @@ def histogram_clueweb_test(filepath, clueweb_counts, sep='\t'):
                 continue
             freebaseid = line.split(sep)[0]
             d[freebaseid] = clueweb_counts[freebaseid]
+    print 'freebase loaded'
+    print 'starting counting'
     Counter(d.values())
-    print Counter
+    print 'counting complete'
+    keys = Counter.keys()
+    keys.sort()
+    for key in keys:
+        print key, Counter[key]
 
 def main():
+    print 'loading clueweb'
     clueweb_filepath = '/iesl/canvas/proj/processedClueweb12/clueweb/clueweb_entity_types.v2.tsv'
     clueweb_counts = load_clueweb_counts(clueweb_filepath)
+    print 'clueweb loaded'
+    print 'loading freebase'
     freebase_test_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/msrFreebaseTest70.v0.tsv'
     histogram_clueweb_test(freebase_test_filepath, clueweb_counts)
 

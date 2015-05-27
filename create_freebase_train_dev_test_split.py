@@ -40,7 +40,7 @@ def write_to_file(ftype_fid, filepath, sep='\t'):
             f.write('{fid}{sep}{ftype}{sep}1\n'.format(fid=fid, ftype=ftype, sep=sep))
 
 def reformat_pat_and_arvinds_entity_file(infilepath='/iesl/canvas/proj/processedClueweb12/freebase/iesl/entity_to_fbtypes',
-                                         outfilepath='/iesl/canvas/proj/processedClueweb12/freebase/iesl/entity_to_fbtypes.tsv')
+                                         outfilepath='/iesl/canvas/proj/processedClueweb12/freebase/iesl/entity_to_fbtypes.tsv'):
     with open(infilepath) as inf:
         with open(outfilepath, 'w') as outf:
             for line in inf:

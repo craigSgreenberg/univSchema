@@ -35,7 +35,7 @@ def main():
     counts = [(len(v), k) for k,v in type2freebaseid.iteritems()]
     counts.sort(reverse=True)
     selected_types = random.sample([t for (_, t) in counts[:n]],m)
-
+    print selected_types
 
 
 if __name__ == '__main__':

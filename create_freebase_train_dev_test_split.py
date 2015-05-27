@@ -24,7 +24,6 @@ def get_type2freebaseid(filepath, sep='\t'):
 def split_train_dev_test(type2freebaseid, selected_types, train_per=.60, dev_per=.1, test_per=.3):
     train, dev, test = [], [], []
     for ftype, freebaseids in type2freebaseid.iteritems():
-        print freebaseids
         if not ftype in selected_types:
             train.extend([(ftype, fid) for fid in freebaseids])
         else:

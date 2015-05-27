@@ -19,7 +19,7 @@ def get_type2freebaseid(filepath, sep='\t'):
             assert val == '1'
             type2freebaseid[ftype] = freebaseid
             i += 1
-            if i > 50000:
+            if i > 100000:
                 break
     return type2freebaseid
 

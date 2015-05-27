@@ -5,7 +5,7 @@ import random
 random.seed(42)
 
 def get_type2freebaseid(filepath, sep='\t'):
-    type2freebaseid = defaultdict()
+    type2freebaseid = defaultdict(list)
     i = 0
     with open(filepath) as f:
         for line in f:
@@ -15,7 +15,7 @@ def get_type2freebaseid(filepath, sep='\t'):
             #/m/010bvf       %%base%%type_ontology%%inanimate        1
             freebaseid, ftype, val = line.split(sep)
             assert val == '1'
-            type2freebaseid[ftype] = freebaseid
+            type2freebaseid[ftype].append(freebaseid)
             i += 1
             if i > 500000:
                 break
@@ -48,6 +48,7 @@ def main():
     dev_filepath = ''
     test_filepath = ''
     type2freebaseid = get_type2freebaseid(freebase_type_filepath)
+    print type2freebaseid
     counts = [(len(v), k) for k,v in type2freebaseid.iteritems()]
     counts.sort(reverse=True)
     selected_types = random.sample([t for (_, t) in counts[:n]],m)

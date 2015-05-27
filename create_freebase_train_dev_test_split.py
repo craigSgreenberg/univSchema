@@ -6,7 +6,6 @@ random.seed(42)
 
 def get_type2freebaseid(filepath, sep='\t'):
     type2freebaseid = defaultdict(list)
-    i = 0
     with open(filepath) as f:
         for line in f:
             line = line.strip()
@@ -16,9 +15,6 @@ def get_type2freebaseid(filepath, sep='\t'):
             freebaseid, ftype, val = line.split(sep)
             assert val == '1'
             type2freebaseid[ftype].append(freebaseid)
-            i += 1
-            if i > 500000:
-                break
     return type2freebaseid
 
 def split_train_dev_test(type2freebaseid, selected_types, train_per=.6, dev_per=.1):

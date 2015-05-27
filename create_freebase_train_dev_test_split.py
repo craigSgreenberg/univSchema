@@ -21,15 +21,15 @@ def get_type2freebaseid(filepath, sep='\t'):
                 break
     return type2freebaseid
 
-def split_train_dev_test(type2freebaseid, selected_types, train_per=.60, dev_per=.1, test_per=.3):
+def split_train_dev_test(type2freebaseid, selected_types, train_per=.6, dev_per=.1):
     train, dev, test = [], [], []
     for ftype, freebaseids in type2freebaseid.iteritems():
         if not ftype in selected_types:
             train.extend([(ftype, fid) for fid in freebaseids])
         else:
             random.shuffle(freebaseids)
-            num_train = int(len(freebaseids)*train_per)
-            num_dev = int(len(freebaseids)*dev_per)
+            num_train = int(len(freebaseids) * train_per)
+            num_dev = int(len(freebaseids) * dev_per)
             trainids = freebaseids[:num_train]
             devids = freebaseids[num_train:num_train+num_dev]
             testids = freebaseids[num_train+num_dev:]

@@ -49,9 +49,8 @@ def main():
     type2freebaseid = get_type2freebaseid(freebase_type_filepath)
     counts = [(len(v), k) for k,v in type2freebaseid.iteritems()]
     counts.sort(reverse=True)
-    print counts
     selected_types = random.sample([t for (_, t) in counts[:n]],m)
-    split_train_dev_test(type2freebaseid, selected_types)
-
+    train, dev, test = split_train_dev_test(type2freebaseid, selected_types)
+    print train[:10], dev[:10], test[:10]
 if __name__ == '__main__':
     main()

@@ -38,19 +38,27 @@ def split_train_dev_test(type2freebaseid, selected_types, train_per=.60, dev_per
             test.extend([(ftype, fid) for fid in testids])
     return train,dev,test
 
+def write_to_file(ftype_fid, filepath, sep='\t'):
+    with open(filepath, 'w') as f:
+        for ftype, fid in ftype_fid:
+            f.write('{fid}{sep}{ftype}{sep}1\n'.format(fid=fid, ftype=ftype))
+
 def main():
     # choose m of the n most common types
     n = 1000
     m = 100
     freebase_type_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/msrFreebaseAll.v0.tsv'
-    train_filepath = ''
-    dev_filepath = ''
-    test_filepath = ''
+    train_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/freebaseTrain.v1.tsv'
+    dev_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/freebaseDev.v1.tsv'
+    test_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/freebaseTest.v1.tsv'
     type2freebaseid = get_type2freebaseid(freebase_type_filepath)
     counts = [(len(v), k) for k,v in type2freebaseid.iteritems()]
     counts.sort(reverse=True)
     selected_types = random.sample([t for (_, t) in counts[:n]],m)
     train, dev, test = split_train_dev_test(type2freebaseid, selected_types)
-    print train[:10], dev[:10], test[:10]
+    write_to_file(train, train_filepath)
+    write_to_file(dev, dev_filepath)
+    write_to_file(test, test_filepath)
+    
 if __name__ == '__main__':
     main()

@@ -57,7 +57,7 @@ def write_train_dev_test_splits():
     m = 100
     # replaced MSR file with Pat and Arvind's entity file...
     #freebase_type_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/msrFreebaseAll.v0.tsv'
-    freebase_type_fileapth = '/iesl/canvas/proj/processedClueweb12/freebase/iesl/entity_to_fbtypes.tsv'
+    freebase_type_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/iesl/entity_to_fbtypes.tsv'
     train_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/freebaseTrain.v1.tsv'
     dev_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/freebaseDev.v1.tsv'
     test_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/freebaseTest.v1.tsv'

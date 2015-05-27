@@ -27,6 +27,8 @@ def split_train_dev_test(type2freebaseid, selected_types, train_per=.6, dev_per=
         if not ftype in selected_types:
             train.extend([(ftype, fid) for fid in freebaseids])
         else:
+            if ftype=='%%religion%%religious_leader':
+                print len(freebaseids)
             random.shuffle(freebaseids)
             num_train = int(len(freebaseids) * train_per)
             num_dev = int(len(freebaseids) * dev_per)

@@ -39,7 +39,19 @@ def write_to_file(ftype_fid, filepath, sep='\t'):
         for ftype, fid in ftype_fid:
             f.write('{fid}{sep}{ftype}{sep}1\n'.format(fid=fid, ftype=ftype, sep=sep))
 
-def main():
+def reformat_pat_and_arvinds_entity_file(infilepath='/iesl/canvas/proj/processedClueweb12/freebase/iesl/entity_to_fbtypes',
+                                         outfilepath='/iesl/canvas/proj/processedClueweb12/freebase/iesl/entity_to_fbtypes.tsv')
+    with open(infilepath) as inf:
+        with open(outfilepath, 'w') as outf:
+            for line in inf:
+                line = line.strip()
+                if not line:
+                    continue
+                entity, types = line.split('\t')
+                for t in types.split(','):
+                    outf.write('%s\t%s\t1\n'%(entity, t))
+
+def write_train_dev_test_splits():
     # choose m of the n most common types
     n = 1000
     m = 100
@@ -55,6 +67,10 @@ def main():
     write_to_file(train, train_filepath)
     write_to_file(dev, dev_filepath)
     write_to_file(test, test_filepath)
+
+def main():
+    reformat_pat_and_arvinds_entity_file()
+
 
 if __name__ == '__main__':
     main()

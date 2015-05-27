@@ -55,7 +55,9 @@ def write_train_dev_test_splits():
     # choose m of the n most common types
     n = 1000
     m = 100
-    freebase_type_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/msrFreebaseAll.v0.tsv'
+    # replaced MSR file with Pat and Arvind's entity file...
+    #freebase_type_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/msrFreebaseAll.v0.tsv'
+    freebase_type_fileapth = '/iesl/canvas/proj/processedClueweb12/freebase/iesl/entity_to_fbtypes.tsv'
     train_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/freebaseTrain.v1.tsv'
     dev_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/freebaseDev.v1.tsv'
     test_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/freebaseTest.v1.tsv'
@@ -69,8 +71,8 @@ def write_train_dev_test_splits():
     write_to_file(test, test_filepath)
 
 def main():
-    reformat_pat_and_arvinds_entity_file()
-
+    #reformat_pat_and_arvinds_entity_file()
+    write_train_dev_test_splits()
 
 if __name__ == '__main__':
     main()

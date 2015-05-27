@@ -19,7 +19,7 @@ def get_type2freebaseid(filepath, sep='\t'):
             assert val == '1'
             type2freebaseid[ftype] = freebaseid
             i += 1
-            if i > 10000:
+            if i > 50000:
                 break
     return type2freebaseid
 
@@ -36,7 +36,6 @@ def main():
     counts.sort(reverse=True)
     selected_types = random.sample([t for (_, t) in counts[:n]],m)
     print selected_types
-
 
 if __name__ == '__main__':
     main()

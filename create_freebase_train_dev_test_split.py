@@ -26,7 +26,7 @@ def get_type2freebaseid(filepath, sep='\t'):
     return type2freebaseid
 
 def main():
-    % choose m of the n most common types
+    # choose m of the n most common types
     n = 1000
     m = 100
     freebase_type_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/msrFreebaseAll.v0.tsv'
@@ -37,7 +37,7 @@ def main():
     counts = [(len(v), k) for k,v in type2freebaseid.iteritems()]
     counts.sort(reverse=True)
     selected_types = random.sample([t for (_, t) in counts[:n]],m)
-    
+
 
 
 if __name__ == '__main__':

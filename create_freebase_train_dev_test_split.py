@@ -33,6 +33,7 @@ def main():
     test_filepath = ''
     type2freebaseid = get_type2freebaseid(freebase_type_filepath)
     counts = [(len(v), k) for k,v in type2freebaseid.iteritems()]
+    print counts
     counts.sort(reverse=True)
     selected_types = random.sample([t for (_, t) in counts[:n]],m)
     print selected_types

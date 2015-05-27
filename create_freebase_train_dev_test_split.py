@@ -2,8 +2,6 @@
 from __future__ import division
 
 from collections import defaultdict
-from collections import Counter
-
 
 import random
 random.seed(42)

@@ -41,7 +41,7 @@ def split_train_dev_test(type2freebaseid, selected_types, train_per=.60, dev_per
 def write_to_file(ftype_fid, filepath, sep='\t'):
     with open(filepath, 'w') as f:
         for ftype, fid in ftype_fid:
-            f.write('{fid}{sep}{ftype}{sep}1\n'.format(fid=fid, ftype=ftype))
+            f.write('{fid}{sep}{ftype}{sep}1\n'.format(fid=fid, ftype=ftype, sep=sep))
 
 def main():
     # choose m of the n most common types
@@ -59,6 +59,6 @@ def main():
     write_to_file(train, train_filepath)
     write_to_file(dev, dev_filepath)
     write_to_file(test, test_filepath)
-    
+
 if __name__ == '__main__':
     main()

@@ -33,7 +33,7 @@ def histogram_clueweb_test(filepath, clueweb_counts, sep='\t', is_cum=True):
         items.sort()
         cur_cnt = sum([cnt for cnt,_ in items])
         for cnt, cnt_of_cnts in items:
-            print cnt, cur_cnt
+            print cnt, cnt_of_cnts, cur_cnt
             print cur_cnt, "have", cnt, "or more occurances."
             cur_cnt -= cnt
     else:

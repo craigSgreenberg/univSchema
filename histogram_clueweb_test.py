@@ -13,7 +13,7 @@ def load_clueweb_counts(filepath, sep='\t'):
             d[freebaseid] += 1
     return d
 
-def histogram_clueweb_test(filepath, clueweb_counts, sep='\t'):
+def histogram_clueweb_test(filepath, clueweb_counts, sep='\t', is_cum=True):
     d = {}
     with open(filepath) as f:
         for line in f:
@@ -28,8 +28,15 @@ def histogram_clueweb_test(filepath, clueweb_counts, sep='\t'):
     print 'counting complete'
     #keys = list(cntr.elements())
     #keys.sort()
-    for cnt, cnt_of_cnts in cntr.most_common():
-        print cnt, cnt_of_cnts
+    if is_cum:
+        items = [(cnt, cnt_of_cnts) for cnt, cnt_of_cnts in cntr.iteritems()]:
+        cur_cnt = sum([cnt for cnt,_ in items])
+        for cnt, cnt_of_cnts in items:
+            print cur_cnt, "have", cnt, "or more occurances."
+            cur_cnt -= cnt
+    else:
+        for cnt, cnt_of_cnts in cntr.most_common():
+            print cnt, cnt_of_cnts
 
 def main():
     print 'loading clueweb'

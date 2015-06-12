@@ -40,7 +40,9 @@ def main():
     print v[:1000]
     print 'clueweb loaded'
     print 'loading freebase'
-    freebase_test_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/msrFreebaseTest70.v0.tsv'
+    # switching from MSR data to custom data
+    #freebase_test_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/msr/msrFreebaseTest70.v0.tsv'
+    freebase_test_filepath = '/iesl/canvas/proj/processedClueweb12/freebase/freebaseTest.v2.tsv'
     histogram_clueweb_test(freebase_test_filepath, clueweb_counts)
 
 if __name__ == '__main__':

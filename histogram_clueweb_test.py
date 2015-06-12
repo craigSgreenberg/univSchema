@@ -31,11 +31,11 @@ def histogram_clueweb_test(filepath, clueweb_counts, sep='\t', is_cum=True):
     if is_cum:
         items = [(cnt, cnt_of_cnts) for cnt, cnt_of_cnts in cntr.iteritems()]
         items.sort()
-        cur_cnt = sum([cnt for cnt,_ in items])
+        cur_cnt = sum([cnt_of_cnts for _,cnt_of_cnts in items])
         for cnt, cnt_of_cnts in items:
             print cnt, cnt_of_cnts, cur_cnt
             print cur_cnt, "have", cnt, "or more occurances."
-            cur_cnt -= cnt
+            cur_cnt -= cnt_of_cnts
     else:
         for cnt, cnt_of_cnts in cntr.most_common():
             print cnt, cnt_of_cnts

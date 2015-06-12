@@ -43,8 +43,9 @@ def main():
     print 'loading clueweb'
     clueweb_filepath = '/iesl/canvas/proj/processedClueweb12/clueweb/clueweb_entity_types.v2.tsv'
     clueweb_counts = load_clueweb_counts(clueweb_filepath)
-    v = clueweb_counts.values()
+    v = [(v,k) for k,v) in clueweb_counts.iteritems()]
     v.sort(reverse=True)
+    print "The thousand freebaseids with the most frequent occurance in clueweb:"
     print v[:1000]
     print 'clueweb loaded'
     print 'loading freebase'
